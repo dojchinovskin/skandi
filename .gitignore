@@ -1,0 +1,15 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Machine-specific Claude settings
+.claude/settings.local.json
+.claude/launch.json
+
+# Build output (generator / web, later)
+build/
+.gradle/
+node_modules/
+dist/

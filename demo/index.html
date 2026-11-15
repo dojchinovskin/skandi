@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="mk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Скандинавка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one narrow centered column, Wordle-style: header rule, grid, clue bar, keyboard at the bottom */
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1b;
+  --muted: #787c7e;
+  --line: #d3d6da;
+  --line-strong: #878a8c;
+  --clue-bg: #f3f4f6;
+  --clue-fg: #44474c;
+  --word: #e4ecfa;
+  --active: #b9cff5;
+  --mark: #fbf1cf;
+  --ok: #5a9e5f;
+  --bad: #cf4a41;
+  --key: #e2e4e7;
+  --key-fg: #1a1a1b;
+  --sky: #dcecfa;
+  --cloud: #ffffff;
+  --sun: #f2c14e;
+  --font: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121213; --fg: #f1f1f2; --muted: #8b8e91; --line: #3a3a3c; --line-strong: #5f6062;
+    --clue-bg: #1d1e20; --clue-fg: #b9bcc0; --word: #1e3150; --active: #2f5590; --mark: #3b3420;
+    --ok: #538d4e; --bad: #e4675e; --key: #818384; --key-fg: #ffffff;
+    --sky: #1c3349; --cloud: #e3e9ef; --sun: #e0ad3a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121213; --fg: #f1f1f2; --muted: #8b8e91; --line: #3a3a3c; --line-strong: #5f6062;
+  --clue-bg: #1d1e20; --clue-fg: #b9bcc0; --word: #1e3150; --active: #2f5590; --mark: #3b3420;
+  --ok: #538d4e; --bad: #e4675e; --key: #818384; --key-fg: #ffffff;
+  --sky: #1c3349; --cloud: #e3e9ef; --sun: #e0ad3a; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font);
+  -webkit-tap-highlight-color: transparent; user-select: none;
+}
+.app {
+  --cell: min(calc((100vw - 32px) / 8), 50px);
+  max-width: 500px; margin: 0 auto; min-height: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 12px;
+}
+
+header {
+  width: 100vw; max-width: 100vw; border-bottom: 1px solid var(--line);
+  display: flex; justify-content: center;
+}
+.bar {
+  width: 100%; max-width: 500px; height: 52px; display: flex; align-items: center; justify-content: space-between;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1 { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: 0.01em; }
+.icon-btn {
+  width: 36px; height: 36px; border: 0; background: none; color: var(--fg); border-radius: 6px;
+  display: grid; place-items: center; cursor: pointer;
+}
+.icon-btn:hover { background: var(--clue-bg); }
+.icon-btn svg { width: 22px; height: 22px; }
+
+.meta { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+
+/* Clue bar */
+.cluebar {
+  width: calc(var(--cell) * 8); min-height: 44px; border-radius: 6px; background: var(--clue-bg);
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 0.95rem; line-height: 1.3;
+}
+.cluebar .dir { font-size: 0.68rem; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+.cluebar .txt { font-weight: 600; min-width: 0; }
+
+/* Grid */
+.grid {
+  display: grid; grid-template-columns: repeat(8, var(--cell)); grid-auto-rows: var(--cell);
+  border: 2px solid var(--line-strong); border-radius: 4px; overflow: hidden; background: var(--line);
+  gap: 1px;
+}
+.cell { position: relative; background: var(--bg); display: grid; place-items: center; }
+.letter { cursor: pointer; font-weight: 700; font-size: calc(var(--cell) * 0.5); }
+.letter .ch { line-height: 1; }
+.letter.mark { background: var(--mark); }
+.letter .num {
+  position: absolute; top: 2px; left: 3px; font-size: calc(var(--cell) * 0.2); font-weight: 600; color: var(--muted); line-height: 1;
+}
+.letter.word { background: var(--word); }
+.letter.active { background: var(--active); }
+.letter.wrong .ch { color: var(--bad); }
+.letter.wrong::after {
+  content: ""; position: absolute; left: 20%; right: 20%; bottom: 12%; height: 2px; background: var(--bad); border-radius: 1px;
+}
+.letter.revealed .ch { color: var(--active); }
+:root .letter.revealed .ch { color: #3c6fd1; }
+.letter.solved { background: var(--ok); color: #fff; }
+.letter.solved .num { color: rgba(255,255,255,.8); }
+.letter.pop .ch { animation: pop .12s ease-out; }
+.letter.flip { animation: flip .45s ease both; }
+@keyframes pop { from { transform: scale(.7); } to { transform: scale(1); } }
+@keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+
+.clue {
+  background: var(--clue-bg); color: var(--clue-fg); cursor: pointer;
+  font-size: calc(var(--cell) * 0.155); line-height: 1.12; font-weight: 500; text-align: center;
+  padding: 2px 3px; overflow: hidden; overflow-wrap: anywhere; hyphens: auto;
+}
+.clue.hot { background: var(--word); color: var(--fg); }
+.clue .arr { position: absolute; width: 0; height: 0; border: 4px solid transparent; }
+.clue .arr.r { right: 1px; top: calc(50% - 4px); border-left-color: var(--line-strong); border-right-width: 0; }
+.clue .arr.d { bottom: 1px; left: calc(50% - 4px); border-top-color: var(--line-strong); border-bottom-width: 0; }
+.blank { background: var(--clue-bg); }
+.pic { grid-row: 1 / 5; grid-column: 1 / 5; background: var(--sky); position: relative; }
+.pic svg { width: 100%; height: 100%; display: block; }
+.pic .tag {
+  position: absolute; left: 6px; bottom: 6px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--bg); color: var(--fg); padding: 3px 6px; border-radius: 3px;
+}
+
+/* Solution strip + actions */
+.below { width: calc(var(--cell) * 8); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.solution { display: flex; align-items: center; gap: 8px; }
+.solution .lbl { font-size: 0.68rem; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.slots { display: flex; gap: 4px; }
+.slot {
+  width: 30px; height: 34px; border: 2px solid var(--line); position: relative;
+  display: grid; place-items: center; font-weight: 700; font-size: 1.05rem; background: var(--mark);
+}
+.slot.filled { border-color: var(--line-strong); }
+.slot .n { position: absolute; top: 1px; left: 3px; font-size: 0.55rem; color: var(--muted); font-weight: 600; }
+.actions { display: flex; gap: 8px; }
+.btn {
+  font: inherit; font-size: 0.82rem; font-weight: 600; height: 34px; padding: 0 12px; border-radius: 4px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: var(--bg); color: var(--fg);
+}
+.btn:hover { background: var(--clue-bg); }
+
+/* Keyboard */
+.kb { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-top: auto; padding-top: 4px; }
+.kb .row { display: flex; gap: 4px; justify-content: center; }
+.key {
+  flex: 1 1 0; max-width: 40px; height: 52px; border: 0; border-radius: 4px; background: var(--key); color: var(--key-fg);
+  font: inherit; font-weight: 700; font-size: 0.95rem; cursor: pointer; padding: 0; touch-action: manipulation;
+}
+.key.wide { max-width: 64px; flex-grow: 1.6; }
+.key:active { filter: brightness(.9); }
+.key svg { width: 22px; height: 22px; vertical-align: middle; }
+
+button:focus-visible, .letter:focus-visible { outline: 2px solid #3c6fd1; outline-offset: 2px; }
+
+.toast {
+  position: fixed; top: calc(64px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+  background: var(--fg); color: var(--bg); font-weight: 600; font-size: 0.9rem; padding: 12px 16px; border-radius: 6px;
+  opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100vw - 32px); text-align: center; z-index: 20;
+}
+.toast.show { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) { .letter.pop .ch, .letter.flip { animation: none; } }
+@media (min-width: 700px) { .app { gap: 18px; } header { margin-bottom: 4px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="bar">
+      <button class="icon-btn" id="help" aria-label="Како се игра">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>
+      </button>
+      <h1>Скандинавка</h1>
+      <button class="icon-btn" id="theme" aria-label="Промени тема">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="meta">Бр. 1 · 15 ноември 2026</div>
+
+  <div class="cluebar" aria-live="polite"><span class="dir" id="cdir"></span><span class="txt" id="ctxt"></span></div>
+
+  <div class="grid" id="grid" role="grid" aria-label="Скандинавка"></div>
+
+  <div class="below">
+    <div class="solution">
+      <span class="lbl">Решение</span>
+      <div class="slots" id="slots"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="reveal">Откриј буква</button>
+      <button class="btn" id="check">Провери</button>
+    </div>
+  </div>
+
+  <div class="kb" id="kb"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// Demo puzzle. '#' clue cell, '.' empty cell, 'P' picture, anything else is a solution letter.
+const SOL = [
+  "PPPP.###",
+  "PPPP#СОК",
+  "PPPP#ОКО",
+  "PPPP#КОС",
+  ".###.###",
+  "#ЛЕБ#МАК",
+  "#ЕЛА#АКО",
+  "#БАЛ#КОЊ",
+].map(r => Array.from(r));
+const H = SOL.length, W = SOL[0].length;
+
+// a = across (arrow right), d = down (arrow down)
+const CLUES = [
+  { at: [1, 4], dir: "a", text: "Цеден пијалак" },
+  { at: [2, 4], dir: "a", text: "Орган за вид" },
+  { at: [3, 4], dir: "a", text: "Црна птица пејачка" },
+  { at: [0, 5], dir: "d", text: "Пијалак од овошје" },
+  { at: [0, 6], dir: "d", text: "Има зеница и трепки" },
+  { at: [0, 7], dir: "d", text: "Накосен, наклонет" },
+  { at: [5, 0], dir: "a", text: "Се пече во фурна" },
+  { at: [6, 0], dir: "a", text: "Иглолисно дрво" },
+  { at: [7, 0], dir: "a", text: "Свечена игранка" },
+  { at: [4, 1], dir: "d", text: "Основна храна" },
+  { at: [4, 2], dir: "d", text: "„Дојди!“ (народски)" },
+  { at: [4, 3], dir: "d", text: "... на маски" },
+  { at: [5, 4], dir: "a", text: "Црвен полски цвет" },
+  { at: [6, 4], dir: "a", text: "Сврзник за услов" },
+  { at: [7, 4], dir: "a", text: "Шаховска фигура" },
+  { at: [4, 5], dir: "d", text: "Ситно семе за колачи" },
+  { at: [4, 6], dir: "d", text: "„... сакаш, дојди“" },
+  { at: [4, 7], dir: "d", text: "Се јава со седло" },
+];
+// Marked cells spell the answer to the picture.
+const MARKS = [[1, 6], [7, 1], [6, 2], [6, 5], [3, 5]];
+
+const isLetter = (r, c) => r >= 0 && c >= 0 && r < H && c < W && !"#.P".includes(SOL[r][c]);
+const key = (r, c) => r + "," + c;
+
+CLUES.forEach(cl => {
+  const [dr, dc] = cl.dir === "a" ? [0, 1] : [1, 0];
+  cl.cells = [];
+  let r = cl.at[0] + dr, c = cl.at[1] + dc;
+  while (isLetter(r, c)) { cl.cells.push([r, c]); r += dr; c += dc; }
+});
+const clueOf = {}; // "r,c" -> { a: idx, d: idx }
+CLUES.forEach((cl, i) => cl.cells.forEach(([r, c]) => { (clueOf[key(r, c)] ||= {})[cl.dir] = i; }));
+const clueAt = {};
+CLUES.forEach((cl, i) => clueAt[key(...cl.at)] = i);
+
+const entries = {}, wrong = new Set(), revealed = new Set();
+let cur = { r: 1, c: 5, i: 0 }, solved = false;
+const cellEl = {};
+
+// ---- build grid
+const grid = document.getElementById("grid");
+const CLOUD = `<svg viewBox="0 0 100 100" aria-hidden="true">
+  <circle cx="72" cy="28" r="11" fill="var(--sun)"/>
+  <g fill="var(--cloud)"><circle cx="38" cy="58" r="15"/><circle cx="55" cy="50" r="18"/><circle cx="70" cy="60" r="12"/>
+  <rect x="24" y="58" width="58" height="14" rx="7"/></g></svg>`;
+for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+  const ch = SOL[r][c];
+  if (ch === "P") {
+    if (r === 0 && c === 0) {
+      const d = document.createElement("div");
+      d.className = "cell pic";
+      d.setAttribute("role", "img");
+      d.setAttribute("aria-label", "Слика: што гледаш? Одговорот е во жолтите полиња.");
+      d.innerHTML = CLOUD + '<span class="tag">Решение →</span>';
+      grid.appendChild(d);
+    }
+    continue;
+  }
+  const d = document.createElement("div");
+  if (ch === "#") {
+    const i = clueAt[key(r, c)];
+    d.className = "cell clue";
+    if (i !== undefined) {
+      d.innerHTML = `<span>${CLUES[i].text}</span><span class="arr ${CLUES[i].dir === "a" ? "r" : "d"}"></span>`;
+      d.addEventListener("click", () => { const [r0, c0] = CLUES[i].cells[0]; cur = { r: r0, c: c0, i }; render(); });
+    } else d.className = "cell blank";
+  } else if (ch === ".") {
+    d.className = "cell blank";
+  } else {
+    d.className = "cell letter";
+    d.setAttribute("role", "gridcell");
+    const m = MARKS.findIndex(([mr, mc]) => mr === r && mc === c);
+    d.innerHTML = (m >= 0 ? `<span class="num">${m + 1}</span>` : "") + '<span class="ch"></span>';
+    if (m >= 0) d.classList.add("mark");
+    d.addEventListener("click", () => tapCell(r, c));
+    cellEl[key(r, c)] = d;
+  }
+  grid.appendChild(d);
+}
+
+const slots = document.getElementById("slots");
+MARKS.forEach((_, i) => { const s = document.createElement("div"); s.className = "slot"; s.innerHTML = `<span class="n">${i + 1}</span><span class="v"></span>`; slots.appendChild(s); });
+
+// ---- keyboard
+const ROWS = ["ЉЊЕРТЅУИОПШЃ", "АСДФГХЈКЛЧЌЖ", "ЗЏЦВБНМ"];
+const BACK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12z"/><path d="m11.5 9.5 5 5m0-5-5 5"/></svg>`;
+const kb = document.getElementById("kb");
+ROWS.forEach((row, ri) => {
+  const rowEl = document.createElement("div"); rowEl.className = "row";
+  Array.from(row).forEach(l => {
+    const b = document.createElement("button"); b.className = "key"; b.textContent = l;
+    b.addEventListener("click", () => typeLetter(l)); rowEl.appendChild(b);
+  });
+  if (ri === 2) {
+    const b = document.createElement("button"); b.className = "key wide"; b.innerHTML = BACK; b.setAttribute("aria-label", "Избриши");
+    b.addEventListener("click", backspace); rowEl.appendChild(b);
+  }
+  kb.appendChild(rowEl);
+});
+const LETTERS = new Set(Array.from(ROWS.join("")));
+// Macedonian keyboard layout, so it works even without the Cyrillic layout installed
+const CODE = { KeyQ:"Љ",KeyW:"Њ",KeyE:"Е",KeyR:"Р",KeyT:"Т",KeyY:"Ѕ",KeyU:"У",KeyI:"И",KeyO:"О",KeyP:"П",BracketLeft:"Ш",BracketRight:"Ѓ",
+  KeyA:"А",KeyS:"С",KeyD:"Д",KeyF:"Ф",KeyG:"Г",KeyH:"Х",KeyJ:"Ј",KeyK:"К",KeyL:"Л",Semicolon:"Ч",Quote:"Ќ",Backslash:"Ж",
+  KeyZ:"З",KeyX:"Џ",KeyC:"Ц",KeyV:"В",KeyB:"Б",KeyN:"Н",KeyM:"М" };
+
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const up = e.key.length === 1 ? e.key.toUpperCase() : "";
+  if (LETTERS.has(up)) { typeLetter(up); e.preventDefault(); return; }
+  if (CODE[e.code]) { typeLetter(CODE[e.code]); e.preventDefault(); return; }
+  if (e.key === "Backspace") { backspace(); e.preventDefault(); }
+  else if (e.key === "ArrowRight") move(0, 1, "a");
+  else if (e.key === "ArrowLeft") move(0, -1, "a");
+  else if (e.key === "ArrowDown") move(1, 0, "d");
+  else if (e.key === "ArrowUp") move(-1, 0, "d");
+  else if (e.key === "Tab") { nextWord(e.shiftKey ? -1 : 1); e.preventDefault(); }
+});
+
+// ---- actions
+function tapCell(r, c) {
+  const both = clueOf[key(r, c)];
+  if (cur.r === r && cur.c === c && both.a !== undefined && both.d !== undefined) {
+    cur.i = CLUES[cur.i].dir === "a" ? both.d : both.a;
+  } else {
+    const dir = CLUES[cur.i].dir;
+    cur = { r, c, i: both[dir] ?? both.a ?? both.d };
+  }
+  render();
+}
+function typeLetter(l) {
+  if (solved) return;
+  const k = key(cur.r, cur.c);
+  entries[k] = l; wrong.delete(k); revealed.delete(k);
+  const el = cellEl[k]; el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+  const cells = CLUES[cur.i].cells, p = cells.findIndex(([r, c]) => r === cur.r && c === cur.c);
+  if (p < cells.length - 1) { cur.r = cells[p + 1][0]; cur.c = cells[p + 1][1]; }
+  else nextWord(1, true);
+  render(); maybeWin();
+}
+function backspace() {
+  if (solved) return;
+  const k = key(cur.r, cur.c);
+  if (entries[k]) { delete entries[k]; wrong.delete(k); revealed.delete(k); }
+  else {
+    const cells = CLUES[cur.i].cells, p = cells.findIndex(([r, c]) => r === cur.r && c === cur.c);
+    if (p > 0) { cur.r = cells[p - 1][0]; cur.c = cells[p - 1][1]; const k2 = key(cur.r, cur.c); delete entries[k2]; wrong.delete(k2); }
+  }
+  render();
+}
+function move(dr, dc, dir) {
+  let r = cur.r + dr, c = cur.c + dc;
+  while (r >= 0 && c >= 0 && r < H && c < W && !isLetter(r, c)) { r += dr; c += dc; }
+  if (!isLetter(r, c)) return;
+  const both = clueOf[key(r, c)];
+  cur = { r, c, i: both[dir] ?? both.a ?? both.d }; render();
+}
+function nextWord(step, skipFilled) {
+  for (let n = 1; n <= CLUES.length; n++) {
+    const i = (cur.i + step * n + CLUES.length * 2) % CLUES.length;
+    const empty = CLUES[i].cells.find(([r, c]) => !entries[key(r, c)]);
+    if (!skipFilled || empty) { const [r, c] = empty || CLUES[i].cells[0]; cur = { r, c, i }; return; }
+  }
+}
+function check() {
+  let bad = 0, empty = 0;
+  for (const k in cellEl) {
+    const [r, c] = k.split(",").map(Number);
+    if (!entries[k]) empty++;
+    else if (entries[k] !== SOL[r][c]) { wrong.add(k); bad++; }
+  }
+  render();
+  if (bad) toast(bad === 1 ? "Има 1 погрешна буква" : `Има ${bad} погрешни букви`);
+  else if (empty) toast("Сè е точно засега");
+}
+function reveal() {
+  if (solved) return;
+  const k = key(cur.r, cur.c);
+  entries[k] = SOL[cur.r][cur.c]; wrong.delete(k); revealed.add(k);
+  render(); maybeWin();
+}
+function maybeWin() {
+  for (const k in cellEl) { const [r, c] = k.split(",").map(Number); if (entries[k] !== SOL[r][c]) return; }
+  solved = true; render();
+  Object.keys(cellEl).forEach((k, n) => setTimeout(() => cellEl[k].classList.add("flip", "solved"), n * 35));
+  setTimeout(() => toast("Браво! Решението е ОБЛАК."), Object.keys(cellEl).length * 35 + 300);
+}
+
+// ---- render
+function render() {
+  const cl = CLUES[cur.i];
+  const inWord = new Set(cl.cells.map(([r, c]) => key(r, c)));
+  for (const k in cellEl) {
+    const el = cellEl[k];
+    el.querySelector(".ch").textContent = entries[k] || "";
+    el.classList.toggle("word", !solved && inWord.has(k));
+    el.classList.toggle("active", !solved && k === key(cur.r, cur.c));
+    el.classList.toggle("wrong", wrong.has(k));
+    el.classList.toggle("revealed", revealed.has(k));
+  }
+  document.querySelectorAll(".clue").forEach(e => e.classList.remove("hot"));
+  document.querySelectorAll(".clue").forEach(e => { if (e.firstChild && e.firstChild.textContent === cl.text) e.classList.add("hot"); });
+  document.getElementById("cdir").textContent = cl.dir === "a" ? "Хоризонтално" : "Вертикално";
+  document.getElementById("ctxt").textContent = cl.text;
+  [...slots.children].forEach((s, i) => {
+    const v = entries[key(...MARKS[i])] || "";
+    s.querySelector(".v").textContent = v; s.classList.toggle("filled", !!v);
+  });
+}
+
+let tt;
+function toast(msg) {
+  const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+document.getElementById("check").addEventListener("click", check);
+document.getElementById("reveal").addEventListener("click", reveal);
+document.getElementById("help").addEventListener("click", () =>
+  toast("Допри поле и пишувај. Допри пак за да ја смениш насоката. Жолтите полиња го даваат решението."));
+document.getElementById("theme").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+});
+
+render();
+</script>
+</body>
+</html>
