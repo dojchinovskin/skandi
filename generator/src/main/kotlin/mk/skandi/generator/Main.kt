@@ -44,9 +44,14 @@ fun validateCommand(paths: List<String>): Boolean {
         val report = try {
             val puzzle = parsePuzzle(file.readText())
             val r = validate(puzzle)
-            // Picture files live next to the puzzles folder: data/site/pictures/
-            val missing = puzzle.pictures.map { it.file }.filter { !File(file.parentFile.parentFile, "pictures/$it").isFile }
-            r.copy(errors = r.errors + missing.map { "picture file pictures/$it not found" })
+            val extra = mutableListOf<String>()
+            if (puzzle.id != file.nameWithoutExtension) extra += "id \"${puzzle.id}\" must match the file name \"${file.nameWithoutExtension}\""
+            // Picture files live next to the puzzles folder: data/site/pictures/.
+            // absoluteFile, so a bare name like "0001.json" still has parent folders.
+            val siteDir = file.absoluteFile.parentFile.parentFile
+            puzzle.pictures.map { it.file }.filter { !File(siteDir, "pictures/$it").isFile }
+                .forEach { extra += "picture file pictures/$it not found" }
+            r.copy(errors = r.errors + extra)
         } catch (e: FormatException) {
             Report(listOf(e.message ?: "unreadable"), emptyList())
         }

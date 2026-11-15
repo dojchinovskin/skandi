@@ -7,6 +7,10 @@ Read `PLAN.md` first: it holds every decision made so far, the milestones and th
   owner gives the green light for it.
 - The owner is fluent in Kotlin and Swift; explain TypeScript/React choices in those terms when useful.
 - One branch and one PR per milestone.
+- Claude reviews every PR before handing it to the owner: read the whole diff, run the builds and
+  tests, try edge cases, fix what it finds on the branch, and post the review as a PR comment
+  (what was checked, what was found, what was fixed, what is left). The owner still reviews and merges.
+- In Claude's cloud workspace `gh` works only through the REST API (`gh api repos/...`).
 - The owner switches between two laptops. Keep all project state in this repo (decisions, status,
   TODOs go in `PLAN.md`), commit and push at the end of each session, and pull at the start.
   Don't rely on local-only memory.
