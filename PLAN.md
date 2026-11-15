@@ -23,7 +23,9 @@ and plays them.
 | Input | On-screen Cyrillic keyboard (31 letters) on mobile, physical keyboard on desktop. |
 | Word list | TSV file in the repo (word, clue, optional picture). Claude drafts a starter list; owner reviews and extends it. |
 | Picture in grid | Yes. A block of cells holds an image that clues one or more answers. Only own or freely licensed images. |
-| Picture answer | Spelled by yellow (marked) cells shown in a **Решение** strip. The marked cells always lie in **one row or one column** (never scattered) and read left-to-right / top-to-bottom. Gaps (clue cells) between them are allowed. |
+| Picture answer | A normal entry (one whole row or column word) with its own clue cell, e.g. „Што гледаш на сликата?“. Its cells are shaded yellow, like the shaded entries in Macedonian magazines (see „100 Сканди“). Also shown in the **Решение** strip. |
+| Pictures per puzzle | One for now; the format should allow more later. |
+| Later idea | Split clue cells holding two clues (one across, one down), as in the magazines. |
 | Words | Only real Macedonian words — no loanword slang (e.g. „ама“), no other languages. Applies to answers and clues. |
 | Keyboard | Macedonian layout (Љ Њ Е Р Т Ѕ…), not alphabetical. Approved. |
 | First grid size | About 7×9, growing as the word list grows. |
@@ -59,10 +61,10 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   Demo content is placeholder, hand-made; the real generator will build the grids.
 - 2026-11-15: Git installed on laptop 1; everything pushed to GitHub (`main`). Owner continues on the other PC.
 - 2026-11-15 (laptop 2): Owner reviewed the demo. Likes the look, the keyboard and the picture + solution idea.
-  Changes requested and done: solution cells must sit in one row or column (demo now reads ОБЛАК along row 6),
-  and only Macedonian words. Demo puzzle rebuilt with new, non-repeating words (every word appears once).
+  Changes requested and done: the picture's answer is a whole entry with its own clue (ОБЛАК in row 6,
+  where a normal word would be), and only Macedonian words. Demo rebuilt with non-repeating words.
   A private preview of the demo is published on claude.ai for viewing on phone.
-  Milestone 0 is effectively approved; waiting for the owner's green light to start milestone 1.
+  Milestone 0 approved. Owner gave the green light for milestone 1.
 
 ## Next session
 1. Clone (or `git pull`) the repo, open the folder in Claude, and ask it to read `PLAN.md`.

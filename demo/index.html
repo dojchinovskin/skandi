@@ -214,10 +214,10 @@ const SOL = [
   "PPPP#ЛОВ",
   "PPPP#ЕРА",
   "PPPP#КОЛ",
-  ".###.###",
-  "#РОБ#ЛАК",
-  "#АКО#ЕЛА",
-  "#КОС#БАЛ",
+  ".#######",
+  "#ОБЛАК##",
+  "#ДО##Р#Н",
+  "##СЕСТРА",
 ].map(r => Array.from(r));
 const H = SOL.length, W = SOL[0].length;
 
@@ -229,22 +229,16 @@ const CLUES = [
   { at: [0, 5], dir: "d", text: "Го пишува докторот" },
   { at: [0, 6], dir: "d", text: "Народна игра во круг" },
   { at: [0, 7], dir: "d", text: "Бран на морето" },
-  { at: [5, 0], dir: "a", text: "Човек без слобода" },
-  { at: [6, 0], dir: "a", text: "Сврзник за услов" },
-  { at: [7, 0], dir: "a", text: "Црна птица пејачка" },
-  { at: [4, 1], dir: "d", text: "Има штипки, оди наназад" },
-  { at: [4, 2], dir: "d", text: "Орган за вид" },
-  { at: [4, 3], dir: "d", text: "Без обувки" },
-  { at: [5, 4], dir: "a", text: "Сјаен премаз" },
-  { at: [6, 4], dir: "a", text: "Иглолисно дрво" },
-  { at: [7, 4], dir: "a", text: "Свечена игранка" },
-  { at: [4, 5], dir: "d", text: "Се пече во фурна" },
-  { at: [4, 6], dir: "d", text: "Чудовиште од бајките" },
-  { at: [4, 7], dir: "d", text: "Влажна земја, блато" },
+  { at: [5, 0], dir: "a", text: "Што гледаш на сликата?" },
+  { at: [6, 0], dir: "a", text: "Спротивно од „од“" },
+  { at: [7, 1], dir: "a", text: "Ќерка на истите родители" },
+  { at: [4, 1], dir: "d", text: "Предлог за потекло" },
+  { at: [4, 2], dir: "d", text: "Без обувки" },
+  { at: [4, 5], dir: "d", text: "Слепо животно, копа под земја" },
+  { at: [5, 7], dir: "d", text: "Предлог: ... маса" },
 ];
-// Marked cells spell the answer to the picture. They always lie in one row or one
-// column and read left-to-right or top-to-bottom.
-const MARKS = [[5, 2], [5, 3], [5, 5], [5, 6], [5, 7]];
+// The picture's answer is a normal entry (row or column) whose cells are shaded yellow.
+const MARKS = [[5, 1], [5, 2], [5, 3], [5, 4], [5, 5]];
 
 const isLetter = (r, c) => r >= 0 && c >= 0 && r < H && c < W && !"#.P".includes(SOL[r][c]);
 const key = (r, c) => r + "," + c;
@@ -278,7 +272,7 @@ for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
       d.className = "cell pic";
       d.setAttribute("role", "img");
       d.setAttribute("aria-label", "Слика: што гледаш? Одговорот е во жолтите полиња.");
-      d.innerHTML = CLOUD + '<span class="tag">Решение ↓</span>';
+      d.innerHTML = CLOUD + '<span class="tag">Слика</span>';
       grid.appendChild(d);
     }
     continue;
