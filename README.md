@@ -31,4 +31,5 @@ npm test           # checks puzzles against the schema
 npm run build      # production build in web/dist
 ```
 
-GitHub Actions runs both builds on every push to `main` and every pull request.
+GitHub Actions runs both builds on every push to `main` and every pull request, and deploys the site to
+GitHub Pages on every push to `main` (`.github/workflows/deploy.yml`).

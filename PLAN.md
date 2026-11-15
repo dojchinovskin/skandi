@@ -18,7 +18,7 @@ and plays them.
 | Generator | Kotlin (JVM command-line tool, Gradle). Owner is fluent in Kotlin and Swift. |
 | Website | TypeScript + React + Vite, static site. |
 | Contract | Puzzle JSON format is the only link between generator and website. |
-| Hosting | GitHub Pages. |
+| Hosting | GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to `main` (brought forward from milestone 6 so the owner can test on any device). Needs the repo public (free plan) and Settings → Pages → Source: GitHub Actions. |
 | Design | Clean and white, like Wordle / Зборле: square tiles, thin grey borders, bold letters, little colour. |
 | Input | On-screen Cyrillic keyboard (31 letters) on mobile, physical keyboard on desktop. |
 | Word list | TSV file in the repo (word, clue, optional picture). Claude drafts a starter list; owner reviews and extends it. |
@@ -81,8 +81,29 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   `format/testdata/` checked by both test suites, real-date check, max one highlight per picture, Macedonian
   error messages, `.gitattributes`, two clue fixes in 0001.json.
 
+- 2026-11-15: PR #2 merged. Milestone 2 built on branch `m2-player-ui`: puzzle 0001 is playable in the React
+  site with the approved design. Game logic is a pure reducer (`web/src/game/state.ts`); 56 web tests in total;
+  components in `web/src/components/`. Supports split clue cells (two clues in one cell). Checked with
+  screenshots at 320px, 390px (light + dark) and desktop, playing through to the win. PR open, reviews in the PR.
+
+## Notes for later milestones
+- Clue length: on small phones (320px) clue cells are ~37px wide, and words longer than ~8 letters break
+  mid-word (browsers can't hyphenate Macedonian). The generator (milestone 4) should prefer short clue words,
+  or we add soft hyphens to long words in the word list.
+- The demo picture is light even in dark mode; fine for photos, revisit for drawn pictures.
+- Small phones (375×667 and smaller): the bottom keyboard row needs a little scrolling, same as the approved
+  demo. Consider a compact layout in milestone 7.
+- Accessibility: the grid has no ARIA rows and letter cells aren't focusable; screen-reader support is for
+  milestone 7.
+
+## Changes from the demo (agreed in review, milestone 2)
+- Keyboard: Tab is left to the browser (so keyboard users can reach the buttons); Enter / Shift+Enter move to
+  the next / previous answer; Delete clears only the current cell.
+- Dropped the small numbers in the shaded cells and Решение slots, and the „Слика“ tag: the solution is now a
+  normal answer read left to right, so they added nothing.
+
 ## Next session
 1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Check the review-fixes PR (#2): merged?
+2. Check the milestone 2 PR: merged?
    Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
-3. Then milestone 2 (playable player UI with puzzle 0001) once the owner gives the green light.
+3. Then milestone 3 (word list: format, starter list, validation) once the owner gives the green light.
