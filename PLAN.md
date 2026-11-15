@@ -34,9 +34,9 @@ and plays them.
 
 ## Repo layout
 - `format/` — puzzle JSON format v1: `README.md` (fields + grid rules) and `puzzle.schema.json`.
-- `generator/` — Kotlin CLI (Gradle wrapper, JDK 17+). Command `validate`; generating comes in milestone 4.
+- `generator/` — Kotlin CLI (Gradle 9.1 wrapper, Kotlin 2.2, JDK 17+; CI tests JDK 17 and 25). Command `validate`; generating comes in milestone 4.
   Uses only the kotlinx-serialization JSON *tree* API (no compiler plugin) and JUnit 4 for tests.
-- `web/` — TypeScript + React + Vite site (Node 22+). Vitest checks puzzles against the schema.
+- `web/` — TypeScript + React + Vite site (Node 22.12+). Vitest checks puzzles against the schema.
 - `data/site/` — published files served at the site root: `puzzles/NNNN.json`, `pictures/*`.
   The word list will live in `data/words/` (milestone 3), outside the published folder.
 - `.github/workflows/build.yml` — builds and tests both parts on every push to `main` and every PR.
@@ -73,10 +73,16 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   `data/site/puzzles/0001.json`, Kotlin generator with `validate` + 9 tests, React/Vite site that loads the
   puzzle (placeholder screen), GitHub Actions build. In Claude's cloud workspace Maven/Gradle downloads are
   blocked, so the Kotlin code was compiled and tested there with Gradle's bundled Kotlin compiler; the real
-  `./gradlew build` runs in GitHub Actions. Web tests + build pass. PR #1 opened; both GitHub Actions checks (Kotlin + web) are green. Waiting for the owner's review.
+  `./gradlew build` runs in GitHub Actions. Web tests + build pass. PR #1 reviewed (Claude + independent reviewer agent) and merged by the owner.
+- 2026-11-15: Added the independent `reviewer` agent (`.claude/agents/reviewer.md`). Its first review of
+  milestone 1 found: Gradle 8.14 can't run on JDK 25+, and the Kotlin validator and JSON Schema disagreed on
+  several rules (unknown fields, file names, size limits, blank text). Fixed on branch `m1-review-fixes`:
+  Gradle 9.1 + Kotlin 2.2 (CI tests JDK 17 and 25), validator matches the schema, shared test data in
+  `format/testdata/` checked by both test suites, real-date check, max one highlight per picture, Macedonian
+  error messages, `.gitattributes`, two clue fixes in 0001.json.
 
 ## Next session
 1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Check PR #1 (https://github.com/dojchinovskin/skandi/pull/1): has the owner reviewed and merged it?
+2. Check the review-fixes PR (#2): merged?
    Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
 3. Then milestone 2 (playable player UI with puzzle 0001) once the owner gives the green light.

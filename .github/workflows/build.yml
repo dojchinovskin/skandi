@@ -7,8 +7,12 @@ on:
 
 jobs:
   generator:
-    name: Generator (Kotlin)
+    name: Generator (Kotlin, JDK ${{ matrix.java }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Oldest supported and newest LTS, so a fresh JDK on either laptop is covered.
+        java: [17, 25]
     defaults:
       run:
         working-directory: generator
@@ -17,7 +21,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: ${{ matrix.java }}
       - uses: gradle/actions/setup-gradle@v4
       # build = compile + unit tests + validatePuzzles (all puzzles in data/site/puzzles)
       - run: ./gradlew build

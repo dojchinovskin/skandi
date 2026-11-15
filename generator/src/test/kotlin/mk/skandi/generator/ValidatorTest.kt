@@ -92,10 +92,54 @@ class ValidatorTest {
         assertTrue(e is FormatException && e.message == "number: expected a whole number")
     }
 
+    @Test fun `date must be a real date`() {
+        assertTrue(errorsOf(small().copy(date = "2026-13-45")).any { "date" in it })
+        assertTrue(errorsOf(small().copy(date = "2026-02-30")).any { "date" in it })
+    }
+
+    @Test fun `header error does not hide grid errors`() {
+        val e = errorsOf(small().copy(date = "x"))
+        assertTrue(e.any { "date" in it })
+        assertTrue(e.any { "no clue" in it })
+    }
+
+    @Test fun `clue outside the grid is an error`() {
+        val p = small(clues = small().clues + Clue(Cell(99, 0), Dir.ACROSS, "Никаде"))
+        assertTrue(errorsOf(p).any { "(99,0) is outside the grid" in it })
+    }
+
+    @Test fun `pictures out of bounds, negative or overlapping are errors`() {
+        val grid = listOf("**#", "**Д", "#НЕ")
+        val clues = listOf(Clue(Cell(0, 2), Dir.DOWN, "А"), Clue(Cell(2, 0), Dir.ACROSS, "Б"))
+        val pic = Picture(Cell(0, 0), 2, 2, "x.svg", "x", "x")
+        assertTrue(errorsOf(small(grid, clues, listOf(pic.copy(cell = Cell(-1, 0))))).any { "outside the grid" in it })
+        assertTrue(errorsOf(small(grid, clues, listOf(pic.copy(height = Int.MAX_VALUE)))).any { "outside the grid" in it })
+        assertTrue(errorsOf(small(grid, clues, listOf(pic, pic.copy(width = 1)))).any { "overlap" in it })
+    }
+
+    @Test fun `at most one highlighted answer per picture`() {
+        val p = small(
+            grid = listOf(".##", "#ДО", "#АД"),
+            clues = small().clues.map { it.copy(highlight = true) } + Clue(Cell(2, 0), Dir.ACROSS, "Б"),
+        )
+        assertTrue(errorsOf(p).any { "highlighted answers but only 0 picture" in it })
+    }
+
+    @Test fun `size limits`() {
+        val row = "." .repeat(31)
+        assertTrue(errorsOf(small(grid = List(3) { row }, clues = emptyList())).any { "3 to 30" in it })
+    }
+
+    @Test fun `parser rejects unknown fields and malformed JSON`() {
+        val ok = File(repoRoot, "data/site/puzzles/0001.json").readText()
+        val typo = runCatching { parsePuzzle(ok.replace("\"highlight\"", "\"higlight\"")) }.exceptionOrNull()
+        assertTrue(typo is FormatException && "unknown field \"higlight\"" in typo.message!!)
+        assertTrue(runCatching { parsePuzzle("{ not json") }.exceptionOrNull() is FormatException)
+        assertTrue(runCatching { parsePuzzle(ok.replace("\"down\"", "\"left\"")) }.exceptionOrNull() is FormatException)
+    }
+
     @Test fun `example puzzle in the repo is valid`() {
-        val file = generateSequence(File("").absoluteFile) { it.parentFile }
-            .map { File(it, "data/site/puzzles/0001.json") }.first { it.isFile }
-        val p = parsePuzzle(file.readText())
+        val p = parsePuzzle(File(repoRoot, "data/site/puzzles/0001.json").readText())
         assertEquals(emptyList<String>(), validate(p).errors)
         val solution = p.entries().single { it.clue.highlight }.answer
         assertEquals("ОБЛАК", solution)
