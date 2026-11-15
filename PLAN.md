@@ -18,7 +18,7 @@ and plays them.
 | Generator | Kotlin (JVM command-line tool, Gradle). Owner is fluent in Kotlin and Swift. |
 | Website | TypeScript + React + Vite, static site. |
 | Contract | Puzzle JSON format is the only link between generator and website. |
-| Hosting | GitHub Pages. |
+| Hosting | GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to `main` (brought forward from milestone 6 so the owner can test on any device). Needs the repo public (free plan) and Settings → Pages → Source: GitHub Actions. |
 | Design | Clean and white, like Wordle / Зборле: square tiles, thin grey borders, bold letters, little colour. |
 | Input | On-screen Cyrillic keyboard (31 letters) on mobile, physical keyboard on desktop. |
 | Word list | TSV file in the repo (word, clue, optional picture). Claude drafts a starter list; owner reviews and extends it. |
