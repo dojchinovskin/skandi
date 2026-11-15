@@ -26,6 +26,7 @@ class FormatTestDataTest {
         "bad-date" to "date",
         "bad-dir" to "dir",
         "bad-id" to "id:",
+        "bad-start" to "start: must be right or below",
         "blank-alt" to "alt is empty",
         "blank-clue" to "text is empty",
         "blank-credit" to "credit is empty",

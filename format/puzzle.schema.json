@@ -82,6 +82,13 @@
               "down"
             ]
           },
+          "start": {
+            "enum": [
+              "right",
+              "below"
+            ],
+            "description": "Where the answer starts: the cell right of or below the clue. Default: right for across, below for down."
+          },
           "text": {
             "type": "string",
             "pattern": "\\S"

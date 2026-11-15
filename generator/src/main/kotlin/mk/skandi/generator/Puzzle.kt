@@ -26,7 +26,29 @@ data class Cell(val row: Int, val col: Int) {
     override fun toString() = "($row,$col)"
 }
 
-data class Clue(val cell: Cell, val dir: Dir, val text: String, val highlight: Boolean = false)
+/**
+ * Where a clue's answer starts, relative to the clue cell: the cell to its RIGHT or the cell BELOW it.
+ * Straight arrows: across + RIGHT, down + BELOW. Bent arrows (as in magazines): across + BELOW, down + RIGHT.
+ */
+enum class Start(val json: String) {
+    RIGHT("right"),
+    BELOW("below");
+
+    companion object {
+        fun default(dir: Dir) = if (dir == Dir.ACROSS) RIGHT else BELOW
+    }
+}
+
+data class Clue(
+    val cell: Cell,
+    val dir: Dir,
+    val text: String,
+    val highlight: Boolean = false,
+    val start: Start = Start.default(dir),
+) {
+    val startCell get() = if (start == Start.RIGHT) Cell(cell.row, cell.col + 1) else Cell(cell.row + 1, cell.col)
+    val bent get() = start != Start.default(dir)
+}
 
 data class Picture(
     val cell: Cell,
@@ -59,9 +81,9 @@ data class Puzzle(
     fun charAt(c: Cell): Char? = if (inside(c)) grid[c.row][c.col] else null
     fun isLetter(c: Cell) = charAt(c)?.let { it in MACEDONIAN_LETTERS } == true
 
-    /** Letter cells starting right after [clue], until a non-letter or the edge. */
+    /** Letter cells from the clue's start cell in its direction, until a non-letter or the edge. */
     fun entryOf(clue: Clue): Entry {
-        val cells = generateSequence(clue.cell.next(clue.dir)) { it.next(clue.dir) }.takeWhile { isLetter(it) }.toList()
+        val cells = generateSequence(clue.startCell) { it.next(clue.dir) }.takeWhile { isLetter(it) }.toList()
         return Entry(clue, cells, cells.map { charAt(it)!! }.joinToString(""))
     }
 
@@ -90,11 +112,15 @@ fun parsePuzzle(text: String): Puzzle {
             val p = "clues[$i]"
             val c = e.obj(p).only(p, CLUE_KEYS)
             val dirName = c.str("dir", p)
+            val dir = Dir.entries.find { it.json == dirName } ?: throw FormatException("$p.dir: must be across or down, got \"$dirName\"")
+            val startName = if (c.containsKey("start")) c.str("start", p) else null
             Clue(
                 cell = Cell(c.int("row", p), c.int("col", p)),
-                dir = Dir.entries.find { it.json == dirName } ?: throw FormatException("$p.dir: must be across or down, got \"$dirName\""),
+                dir = dir,
                 text = c.str("text", p),
                 highlight = c.optBool("highlight", p) ?: false,
+                start = if (startName == null) Start.default(dir)
+                else Start.entries.find { it.json == startName } ?: throw FormatException("$p.start: must be right or below, got \"$startName\""),
             )
         },
         pictures = o.arr("pictures").mapIndexed { i, e ->
@@ -116,7 +142,7 @@ fun parsePuzzle(text: String): Puzzle {
 
 // Same field lists as format/puzzle.schema.json, which forbids any others (catches typos like "higlight").
 private val PUZZLE_KEYS = setOf("format", "id", "number", "date", "width", "height", "grid", "clues", "pictures")
-private val CLUE_KEYS = setOf("row", "col", "dir", "text", "highlight")
+private val CLUE_KEYS = setOf("row", "col", "dir", "text", "highlight", "start")
 private val PICTURE_KEYS = setOf("row", "col", "width", "height", "file", "alt", "credit")
 
 private fun JsonObject.only(path: String, allowed: Set<String>): JsonObject {

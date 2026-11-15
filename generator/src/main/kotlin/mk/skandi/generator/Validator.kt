@@ -49,32 +49,42 @@ fun validate(p: Puzzle): Report {
 
     val cells = (0 until p.height).flatMap { r -> (0 until p.width).map { c -> Cell(r, c) } }
 
-    // Rule 2: clues sit on '#' cells, at most one per direction
-    val seen = mutableSetOf<Pair<Cell, Dir>>()
+    // Rule 2: clues sit on '#' cells; at most two per cell, and not two with the same start
+    val seen = mutableSetOf<Pair<Cell, Start>>()
     p.clues.forEachIndexed { i, clue ->
         val ch = p.charAt(clue.cell)
         when {
             ch == null -> errors += "clues[$i]: ${clue.cell} is outside the grid"
             ch != CLUE -> errors += "clues[$i]: ${clue.cell} is '$ch', clues must be on '#' cells"
         }
-        if (!seen.add(clue.cell to clue.dir)) errors += "clues[$i]: a second ${clue.dir.json} clue in ${clue.cell}"
+        if (!seen.add(clue.cell to clue.start)) errors += "clues[$i]: a second clue in ${clue.cell} starting ${clue.start.json}"
+    }
+    p.clues.groupBy { it.cell }.filter { it.value.size > 2 }.forEach { (cell, list) ->
+        errors += "${list.size} clues in $cell, at most 2 fit in one cell"
     }
 
-    // Rule 3: each clue has an answer of 2+ letters
+    // Rule 3: each clue's answer starts at a letter that begins a word, and has 2+ letters
     val entries = p.entries()
     entries.forEachIndexed { i, e ->
-        if (p.charAt(e.clue.cell) == CLUE && e.cells.size < 2) {
-            errors += "clues[$i] „${e.clue.text}“: answer must be at least 2 letters, found ${e.cells.size}"
+        if (p.charAt(e.clue.cell) != CLUE) return@forEachIndexed // already reported
+        val start = e.clue.startCell
+        when {
+            e.cells.size < 2 -> errors += "clues[$i] „${e.clue.text}“: answer must be at least 2 letters, found ${e.cells.size}"
+            p.isLetter(start.prev(e.clue.dir)) ->
+                errors += "clues[$i] „${e.clue.text}“: answer starts at $start, in the middle of a word"
         }
     }
 
-    // Rule 4: every run of 2+ letters has a clue right before it
-    val clued = p.clues.map { it.cell to it.dir }.toSet()
+    // Rule 4: every run of 2+ letters is the answer of exactly one clue
+    val clueCount = entries.filter { it.cells.size >= 2 }.groupingBy { it.cells.first() to it.clue.dir }.eachCount()
     for (dir in Dir.entries) for (cell in cells) {
         if (!p.isLetter(cell) || p.isLetter(cell.prev(dir))) continue // not the start of a run
         val length = generateSequence(cell) { it.next(dir) }.takeWhile { p.isLetter(it) }.count()
-        if (length >= 2 && (cell.prev(dir) to dir) !in clued) {
-            errors += "word starting at $cell going ${dir.json} ($length letters) has no clue before it"
+        if (length < 2) continue
+        when (clueCount[cell to dir] ?: 0) {
+            0 -> errors += "word starting at $cell going ${dir.json} ($length letters) has no clue"
+            1 -> {}
+            else -> errors += "word starting at $cell going ${dir.json} has more than one clue"
         }
     }
 
@@ -82,7 +92,7 @@ fun validate(p: Puzzle): Report {
     val covered = entries.flatMap { it.cells }.toSet()
     for (cell in cells) {
         if (p.isLetter(cell) && cell !in covered) errors += "letter at $cell is not part of any answer"
-        if (p.charAt(cell) == CLUE && p.clues.none { it.cell == cell }) errors += "'#' at $cell holds no clue (use '.' for filler)"
+        if (p.charAt(cell) == CLUE && p.clues.none { it.cell == cell }) errors += "'#' at $cell holds no clue"
     }
 
     // Rule 6: pictures cover exactly the '*' cells
@@ -106,6 +116,8 @@ fun validate(p: Puzzle): Report {
     if (highlights > p.pictures.size) errors += "$highlights highlighted answers but only ${p.pictures.size} picture(s)"
 
     // Warnings
+    val fillers = cells.count { p.charAt(it) == FILLER }
+    if (fillers > 0) warnings += "$fillers empty filler cell(s); published puzzles should have none"
     entries.groupBy { it.answer }.filter { it.key.length >= 2 && it.value.size > 1 }.forEach { (answer, list) ->
         warnings += "answer $answer is used ${list.size} times"
     }

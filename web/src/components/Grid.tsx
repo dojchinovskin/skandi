@@ -74,7 +74,8 @@ function PictureCell({ cell }: { cell: Extract<CellInfo, { kind: "picture" }> })
   );
 }
 
-/** One clue, or two stacked (across on top, down below) like the split cells in magazine скандинавки. */
+/** One clue, or two stacked (the one starting right on top, the one starting below underneath), like the
+ *  split cells in magazine скандинавки. Each arrow sits on the edge where its answer starts. */
 function ClueCell({ clues, active, dispatch }: { clues: Entry[]; active: Entry; dispatch: (a: Action) => void }) {
   return (
     <div className={`cell clue${clues.length > 1 ? " split" : ""}`}>
@@ -86,9 +87,21 @@ function ClueCell({ clues, active, dispatch }: { clues: Entry[]; active: Entry; 
           aria-label={`${e.dir === "across" ? "Хоризонтално" : "Вертикално"}: ${e.clue.text}`}
         >
           <span className="clue-text">{e.clue.text}</span>
-          <span className={`arr ${e.dir === "across" ? "r" : "d"}`} aria-hidden="true" />
+          <Arrow entry={e} />
         </button>
       ))}
     </div>
+  );
+}
+
+/** ▸ / ▾ for straight arrows; a small bent arrow (↳ or ⤵) for answers that start beside the clue and turn. */
+function Arrow({ entry }: { entry: Entry }) {
+  if (!entry.bent) return <span className={`arr ${entry.start === "right" ? "r" : "d"}`} aria-hidden="true" />;
+  // Bent: drawn on the edge where the answer starts, turning toward the direction it runs.
+  const path = entry.start === "below" ? "M2 1 V6 H9 M6.5 3.5 L9 6 L6.5 8.5" : "M1 2 H6 V9 M3.5 6.5 L6 9 L8.5 6.5";
+  return (
+    <svg className={`bent ${entry.start === "below" ? "b" : "r"}`} viewBox="0 0 10 10" aria-hidden="true">
+      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

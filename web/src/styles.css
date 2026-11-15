@@ -105,14 +105,19 @@ h1 { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: 0.01em; }
   font-size: calc(var(--cell-w) * 0.148); line-height: 1.12; letter-spacing: -0.01em; font-weight: 500; text-align: center;
   overflow: hidden; overflow-wrap: anywhere; hyphens: auto;
 }
-.clue-part:has(.arr.r) { padding-right: 6px; } /* keep text clear of the arrow */
-.clue-part:has(.arr.d) { padding-bottom: 6px; }
+.clue-part:has(.arr.r) { padding-right: 7px; } /* keep text clear of the arrow */
+.clue-part:has(.arr.d) { padding-bottom: 7px; }
+.clue-part:has(.bent.r) { padding-right: 11px; } /* bent arrows are wider */
+.clue-part:has(.bent.b) { padding-bottom: 11px; }
 .clue.split .clue-part { font-size: calc(var(--cell-w) * 0.13); }
 .clue.split .clue-part + .clue-part { border-top: 1px solid var(--line); }
 .clue-part.hot { background: var(--word); color: var(--fg); }
 .arr { position: absolute; width: 0; height: 0; border: 4px solid transparent; }
 .arr.r { right: 1px; top: calc(50% - 4px); border-left-color: var(--line-strong); border-right-width: 0; }
 .arr.d { bottom: 1px; left: calc(50% - 4px); border-top-color: var(--line-strong); border-bottom-width: 0; }
+.bent { position: absolute; width: 9px; height: 9px; color: var(--line-strong); }
+.bent.b { bottom: 0; left: calc(50% - 4.5px); } /* answer starts below, runs right */
+.bent.r { right: 0; top: calc(50% - 4.5px); }   /* answer starts right, runs down */
 
 .pic { overflow: hidden; }
 .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
