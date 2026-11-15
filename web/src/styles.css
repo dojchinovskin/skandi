@@ -1,0 +1,20 @@
+/* Same palette as demo/index.html; the full design moves here in milestone 2. */
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1b;
+  --muted: #787c7e;
+  --line: #d3d6da;
+  --clue-bg: #f3f4f6;
+  font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #121213; --fg: #f1f1f2; --muted: #8b8e91; --line: #3a3a3c; --clue-bg: #1d1e20; }
+}
+
+body { margin: 0; background: var(--bg); color: var(--fg); }
+.app { max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 16px; }
+header { width: 100vw; border-bottom: 1px solid var(--line); display: flex; justify-content: center; }
+h1 { margin: 0; height: 52px; line-height: 52px; font-size: 1.45rem; font-weight: 800; }
+.meta { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.note { background: var(--clue-bg); border-radius: 6px; padding: 12px 16px; line-height: 1.5; text-align: center; }
