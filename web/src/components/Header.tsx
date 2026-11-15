@@ -2,25 +2,35 @@ import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
-/** Remembers a manual light/dark choice in this browser; otherwise follows the system setting. */
+/** A manual light/dark choice, remembered in this browser. Until the player picks one, the page follows
+ *  the system setting through CSS (no data-theme attribute), including live changes. */
 function useTheme(): [Theme, () => void] {
-  const system = (): Theme => (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  const [theme, setTheme] = useState<Theme>(() => {
+  const [chosen, setChosen] = useState<Theme | null>(() => {
     try {
       const saved = localStorage.getItem("theme");
       if (saved === "light" || saved === "dark") return saved;
     } catch { /* storage can be unavailable (private mode) */ }
-    return system();
+    return null;
   });
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
+    if (chosen) document.documentElement.dataset.theme = chosen;
+  }, [chosen]);
+  // Follow live system changes so the button label stays right while no theme is chosen.
+  const DARK = "(prefers-color-scheme: dark)";
+  const [systemDark, setSystemDark] = useState(() => matchMedia(DARK).matches);
+  useEffect(() => {
+    const query = matchMedia(DARK);
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+  const current = (): Theme => chosen ?? (systemDark ? "dark" : "light");
   const toggle = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
+    const next = current() === "dark" ? "light" : "dark";
+    setChosen(next);
     try { localStorage.setItem("theme", next); } catch { /* ignore */ }
   };
-  return [theme, toggle];
+  return [current(), toggle];
 }
 
 export function Header({ onHelp }: { onHelp: () => void }) {

@@ -46,13 +46,15 @@ export function Actions({ state, dispatch }: { state: GameState; dispatch: (a: A
 }
 
 /** Shows each new toast for a few seconds. */
-export function Toast({ toast }: { toast?: GameState["toast"] }) {
+export function Toast({ toast, delay = 0 }: { toast?: GameState["toast"]; delay?: number }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     if (!toast) return;
-    setVisible(true);
-    const t = setTimeout(() => setVisible(false), toast.text.length > 40 ? 4000 : 2200);
-    return () => clearTimeout(t);
+    const show = setTimeout(() => setVisible(true), delay);
+    const hide = setTimeout(() => setVisible(false), delay + (toast.text.length > 40 ? 4000 : 2200));
+    return () => { clearTimeout(show); clearTimeout(hide); };
+    // Only a new toast restarts the timers; delay is read when it arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
   return (
     <div className={`toast${visible ? " show" : ""}`} role="status">

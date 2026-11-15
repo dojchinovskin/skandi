@@ -20,6 +20,7 @@ export type Action =
   | { type: "selectEntry"; index: number } // tap a clue
   | { type: "type"; letter: string }
   | { type: "backspace" }
+  | { type: "clear" } // Delete key: clears the current cell only
   | { type: "move"; arrow: Arrow }
   | { type: "nextEntry"; step: 1 | -1 }
   | { type: "check" }
@@ -72,7 +73,7 @@ function isComplete(model: Model, letters: GameState["letters"]) {
 
 function winIfComplete(model: Model, s: GameState): GameState {
   if (!isComplete(model, s.letters)) return s;
-  const text = model.solution ? `Браво! Решението е ${model.solution.answer}.` : "Браво! Ја решивте скандинавката.";
+  const text = model.solution ? `Браво! Решението е ${model.solution.answer}.` : "Браво! Ја реши скандинавката.";
   return { ...s, solved: true, wrong: new Set(), toast: toast(text) };
 }
 
@@ -126,6 +127,13 @@ export function reduce(model: Model, s: GameState, a: Action): GameState {
       const prev = cells[at - 1];
       const { [prev]: _, ...letters } = s.letters;
       return { ...s, letters, cursor: prev, wrong: without(s.wrong, prev), revealed: without(s.revealed, prev) };
+    }
+
+    case "clear": {
+      const k = s.cursor;
+      if (!s.letters[k]) return s;
+      const { [k]: _, ...letters } = s.letters;
+      return { ...s, letters, wrong: without(s.wrong, k), revealed: without(s.revealed, k) };
     }
 
     case "move": {

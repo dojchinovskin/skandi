@@ -5,7 +5,7 @@ import { Keyboard, usePhysicalKeyboard } from "./components/Keyboard";
 import { Actions, ClueBar, SolutionStrip, Toast } from "./components/Parts";
 import { type Action, initialState, reduce } from "./game/state";
 import { formatDate, loadPuzzle } from "./puzzle/load";
-import { buildModel } from "./puzzle/model";
+import { buildModel, type Model } from "./puzzle/model";
 import type { Puzzle } from "./puzzle/types";
 
 const PUZZLE_ID = "0001"; // the archive comes in milestone 6
@@ -22,7 +22,8 @@ export default function App() {
   return (
     <div className="app">
       {puzzle && puzzle.clues.length > 0 ? (
-        <Game puzzle={puzzle} />
+        // key: a different puzzle gets a fresh Game (and fresh state), like a new ViewModel per screen.
+        <Game key={puzzle.id} puzzle={puzzle} />
       ) : (
         <>
           <Header onHelp={() => {}} />
@@ -34,7 +35,25 @@ export default function App() {
 }
 
 function Game({ puzzle }: { puzzle: Puzzle }) {
-  const model = useMemo(() => buildModel(puzzle), [puzzle]);
+  const model = useMemo(() => {
+    try {
+      return buildModel(puzzle);
+    } catch {
+      return null; // a broken file should show a message, not a blank page
+    }
+  }, [puzzle]);
+  if (!model) {
+    return (
+      <>
+        <Header onHelp={() => {}} />
+        <p className="note">Сложувалката {puzzle.id} е оштетена.</p>
+      </>
+    );
+  }
+  return <Board puzzle={puzzle} model={model} />;
+}
+
+function Board({ puzzle, model }: { puzzle: Puzzle; model: Model }) {
   // useReducer = state + a pure reduce function (game/state.ts); dispatch(action) produces the next state.
   const [state, rawDispatch] = useReducer((s: ReturnType<typeof initialState>, a: Action) => reduce(model, s, a), model, initialState);
   const dispatch = useCallback((a: Action) => rawDispatch(a), []);
@@ -53,7 +72,8 @@ function Game({ puzzle }: { puzzle: Puzzle }) {
         <Actions state={state} dispatch={dispatch} />
       </div>
       <Keyboard dispatch={dispatch} />
-      <Toast toast={state.toast} />
+      {/* The win message waits for the green flip to finish, as in the demo. */}
+      <Toast toast={state.toast} delay={state.solved ? model.letterKeys.length * 35 + 450 : 0} />
     </div>
   );
 }

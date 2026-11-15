@@ -28,13 +28,38 @@ describe("model", () => {
     expect(pics).toHaveLength(16);
     expect(pics.filter((c) => c.kind === "picture" && c.isTopLeft)).toHaveLength(1);
   });
-  it("puts two clues in one cell, across first", () => {
-    const p: Puzzle = { ...puzzle, grid: [...puzzle.grid], clues: [...puzzle.clues] };
-    // (4,1) already has the down clue for ОД; give it a fake across clue too by checking ordering only.
-    p.clues.push({ row: 6, col: 0, dir: "down", text: "x" }); // (6,0) has ДО across; down from it is (7,0) = '.', so 0 letters
-    const m = buildModel(p);
-    const cell = m.cells[6][0];
-    expect(cell.kind === "clue" && cell.clues.map((e) => e.dir)).toEqual(["across", "down"]);
+});
+
+// A tiny valid puzzle with a split clue cell: (0,0) holds ДО across and НА down.
+//                                          # Д О
+//                                          Н . .
+//                                          А . .
+const split: Puzzle = {
+  format: 1, id: "split", number: 1, date: "2026-11-15", width: 3, height: 3,
+  grid: ["#ДО", "Н..", "А.."],
+  clues: [
+    { row: 0, col: 0, dir: "down", text: "Предлог: ... маса" },
+    { row: 0, col: 0, dir: "across", text: "Предлог за правец" },
+  ],
+  pictures: [],
+};
+
+describe("split clue cell", () => {
+  const m = buildModel(split);
+  const go = (...actions: Action[]) => actions.reduce((s, a) => reduce(m, s, a), initialState(m));
+
+  it("shows both clues in one cell, across on top", () => {
+    const cell = m.cells[0][0];
+    expect(cell.kind === "clue" && cell.clues.map((e) => e.answer)).toEqual(["ДО", "НА"]);
+  });
+  it("each half selects its own answer, and both can be solved", () => {
+    let s = go({ type: "selectEntry", index: 1 }, { type: "type", letter: "Д" }, { type: "type", letter: "О" });
+    expect(s.solved).toBe(false);
+    s = reduce(m, s, { type: "selectEntry", index: 0 });
+    expect(m.entries[s.entry].answer).toBe("НА");
+    s = reduce(m, reduce(m, s, { type: "type", letter: "Н" }), { type: "type", letter: "А" });
+    expect(s.solved).toBe(true);
+    expect(s.toast?.text).toBe("Браво! Ја реши скандинавката."); // no picture answer in this puzzle
   });
 });
 
@@ -94,11 +119,44 @@ describe("typing and moving", () => {
     expect(s.cursor).toBe(k(5, 3));
   });
 
-  it("Tab cycles answers both ways", () => {
+  it("Enter / Shift+Enter cycle answers both ways", () => {
     let s = run({ type: "nextEntry", step: -1 });
     expect(model.entries[s.entry].answer).toBe("НА");
     s = reduce(model, s, { type: "nextEntry", step: 1 });
     expect(model.entries[s.entry].answer).toBe("ЛОВ");
+  });
+});
+
+describe("editing edge cases", () => {
+  it("backspace on the first cell of an empty answer does nothing", () => {
+    const s = initialState(model);
+    expect(reduce(model, s, { type: "backspace" })).toBe(s);
+  });
+  it("Delete clears only the current cell and never moves", () => {
+    let s = run(...typeWord("Л"), { type: "select", key: k(1, 6) });
+    expect(reduce(model, s, { type: "clear" })).toBe(s); // empty: nothing to do
+    s = reduce(model, s, { type: "select", key: k(1, 5) });
+    s = reduce(model, s, { type: "clear" });
+    expect(s.letters[k(1, 5)]).toBeUndefined();
+    expect(s.cursor).toBe(k(1, 5));
+  });
+  it("typing over a revealed letter removes the revealed mark", () => {
+    let s = run({ type: "reveal" });
+    s = reduce(model, s, { type: "select", key: k(1, 5) });
+    s = reduce(model, s, { type: "type", letter: "Л" });
+    expect(s.revealed.has(k(1, 5))).toBe(false);
+  });
+  it("with every cell filled but one wrong, typing at the end of an answer keeps the cursor", () => {
+    let s: GameState = initialState(model);
+    for (const key of model.letterKeys) {
+      s = reduce(model, s, { type: "select", key });
+      s = reduce(model, s, { type: "reveal" });
+      if (key === k(7, 6)) break; // everything before the last cell
+    }
+    s = reduce(model, s, { type: "select", key: k(7, 7) });
+    s = reduce(model, s, { type: "type", letter: "Б" });
+    expect(s.solved).toBe(false);
+    expect(s.cursor).toBe(k(7, 7));
   });
 });
 

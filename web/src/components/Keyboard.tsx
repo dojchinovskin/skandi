@@ -14,21 +14,44 @@ const BY_POSITION: Record<string, string> = {
   KeyC: "Ц", KeyV: "В", KeyB: "Б", KeyN: "Н", KeyM: "М",
 };
 
+/** The parts of a KeyboardEvent the mapping needs, so it can be tested without a browser. */
+export interface KeyPress {
+  key: string;
+  code: string;
+  shiftKey?: boolean;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  altKey?: boolean;
+  onButton?: boolean; // focus is on a button
+}
+
+/** Maps a physical key press to a game action, or undefined to let the browser handle it. */
+export function actionForKey(e: KeyPress): Action | undefined {
+  if (e.ctrlKey || e.metaKey || e.altKey) return undefined;
+  // Tab always moves focus (keyboard users must reach the buttons). On a focused button, Enter/Space press it.
+  if (e.key === "Tab") return undefined;
+  if (e.onButton && (e.key === "Enter" || e.key === " ")) return undefined;
+  const upper = e.key.length === 1 ? e.key.toUpperCase() : "";
+  const letter = LETTERS.has(upper) ? upper : BY_POSITION[e.code];
+  if (letter) return { type: "type", letter };
+  switch (e.key) {
+    case "Backspace": return { type: "backspace" };
+    case "Delete": return { type: "clear" };
+    case "ArrowLeft": return { type: "move", arrow: "left" };
+    case "ArrowRight": return { type: "move", arrow: "right" };
+    case "ArrowUp": return { type: "move", arrow: "up" };
+    case "ArrowDown": return { type: "move", arrow: "down" };
+    case "Enter": return { type: "nextEntry", step: e.shiftKey ? -1 : 1 };
+  }
+  return undefined;
+}
+
 /** Desktop keyboard. Like registering a key listener in onAppear and removing it in onDisappear. */
 export function usePhysicalKeyboard(dispatch: (a: Action) => void) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const upper = e.key.length === 1 ? e.key.toUpperCase() : "";
-      const letter = LETTERS.has(upper) ? upper : BY_POSITION[e.code];
-      let action: Action | undefined;
-      if (letter) action = { type: "type", letter };
-      else if (e.key === "Backspace" || e.key === "Delete") action = { type: "backspace" };
-      else if (e.key === "ArrowLeft") action = { type: "move", arrow: "left" };
-      else if (e.key === "ArrowRight") action = { type: "move", arrow: "right" };
-      else if (e.key === "ArrowUp") action = { type: "move", arrow: "up" };
-      else if (e.key === "ArrowDown") action = { type: "move", arrow: "down" };
-      else if (e.key === "Tab" || e.key === "Enter") action = { type: "nextEntry", step: e.shiftKey ? -1 : 1 };
+      const onButton = e.target instanceof HTMLElement && e.target.closest("button") !== null;
+      const action = actionForKey({ key: e.key, code: e.code, shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey, onButton });
       if (action) {
         e.preventDefault();
         dispatch(action);
