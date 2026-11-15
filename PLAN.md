@@ -55,10 +55,9 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   picture block plus a solution word, on-screen Macedonian keyboard, light/dark. Waiting for the owner's feedback.
   Demo content is placeholder: each 3×3 block is a symmetric word square, so every word appears twice.
   The real generator won't do that.
-- Not yet on GitHub: Git isn't installed on laptop 1. The owner continues on the other PC, which has Git.
+- 2026-11-15: Git installed on laptop 1; everything pushed to GitHub (`main`). Owner continues on the other PC.
 
-## Next session (on the PC with Git)
-1. Get `PLAN.md`, `CLAUDE.md` and `demo/index.html` into the repo (uploaded via github.com or copied over).
-2. Clone the repo, open the folder in Claude, and ask it to read `PLAN.md`.
-3. Collect the owner's design feedback on the demo (open `demo/index.html` in a browser), then start milestone 1
+## Next session
+1. Clone (or `git pull`) the repo, open the folder in Claude, and ask it to read `PLAN.md`.
+2. Collect the owner's design feedback on the demo (open `demo/index.html` in a browser), then start milestone 1
    once the owner gives the green light.
