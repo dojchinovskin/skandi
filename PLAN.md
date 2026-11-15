@@ -116,6 +116,7 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 
 ## Next session
 1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Owner's feedback on the dense grid at https://dojchinovskin.github.io/skandi/.
+2. Start milestone 3 (word list: format, starter list, validation) once the owner gives the green light.
+   Owner liked the dense grid (2026-11-15). The search scripts from that session are not in the repo; the
+   approach is described under "Notes for later milestones".
    Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
-3. Then milestone 3 (word list: format, starter list, validation) once the owner gives the green light.
