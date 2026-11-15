@@ -211,39 +211,40 @@ button:focus-visible, .letter:focus-visible { outline: 2px solid #3c6fd1; outlin
 // Demo puzzle. '#' clue cell, '.' empty cell, 'P' picture, anything else is a solution letter.
 const SOL = [
   "PPPP.###",
-  "PPPP#СОК",
-  "PPPP#ОКО",
-  "PPPP#КОС",
+  "PPPP#ЛОВ",
+  "PPPP#ЕРА",
+  "PPPP#КОЛ",
   ".###.###",
-  "#ЛЕБ#МАК",
-  "#ЕЛА#АКО",
-  "#БАЛ#КОЊ",
+  "#РОБ#ЛАК",
+  "#АКО#ЕЛА",
+  "#КОС#БАЛ",
 ].map(r => Array.from(r));
 const H = SOL.length, W = SOL[0].length;
 
 // a = across (arrow right), d = down (arrow down)
 const CLUES = [
-  { at: [1, 4], dir: "a", text: "Цеден пијалак" },
-  { at: [2, 4], dir: "a", text: "Орган за вид" },
-  { at: [3, 4], dir: "a", text: "Црна птица пејачка" },
-  { at: [0, 5], dir: "d", text: "Пијалак од овошје" },
-  { at: [0, 6], dir: "d", text: "Има зеница и трепки" },
-  { at: [0, 7], dir: "d", text: "Накосен, наклонет" },
-  { at: [5, 0], dir: "a", text: "Се пече во фурна" },
-  { at: [6, 0], dir: "a", text: "Иглолисно дрво" },
-  { at: [7, 0], dir: "a", text: "Свечена игранка" },
-  { at: [4, 1], dir: "d", text: "Основна храна" },
-  { at: [4, 2], dir: "d", text: "„Дојди!“ (народски)" },
-  { at: [4, 3], dir: "d", text: "... на маски" },
-  { at: [5, 4], dir: "a", text: "Црвен полски цвет" },
-  { at: [6, 4], dir: "a", text: "Сврзник за услов" },
-  { at: [7, 4], dir: "a", text: "Шаховска фигура" },
-  { at: [4, 5], dir: "d", text: "Ситно семе за колачи" },
-  { at: [4, 6], dir: "d", text: "„... сакаш, дојди“" },
-  { at: [4, 7], dir: "d", text: "Се јава со седло" },
+  { at: [1, 4], dir: "a", text: "Гонење дивеч" },
+  { at: [2, 4], dir: "a", text: "Долг историски период" },
+  { at: [3, 4], dir: "a", text: "Заострено дрво за ограда" },
+  { at: [0, 5], dir: "d", text: "Го пишува докторот" },
+  { at: [0, 6], dir: "d", text: "Народна игра во круг" },
+  { at: [0, 7], dir: "d", text: "Бран на морето" },
+  { at: [5, 0], dir: "a", text: "Човек без слобода" },
+  { at: [6, 0], dir: "a", text: "Сврзник за услов" },
+  { at: [7, 0], dir: "a", text: "Црна птица пејачка" },
+  { at: [4, 1], dir: "d", text: "Има штипки, оди наназад" },
+  { at: [4, 2], dir: "d", text: "Орган за вид" },
+  { at: [4, 3], dir: "d", text: "Без обувки" },
+  { at: [5, 4], dir: "a", text: "Сјаен премаз" },
+  { at: [6, 4], dir: "a", text: "Иглолисно дрво" },
+  { at: [7, 4], dir: "a", text: "Свечена игранка" },
+  { at: [4, 5], dir: "d", text: "Се пече во фурна" },
+  { at: [4, 6], dir: "d", text: "Чудовиште од бајките" },
+  { at: [4, 7], dir: "d", text: "Влажна земја, блато" },
 ];
-// Marked cells spell the answer to the picture.
-const MARKS = [[1, 6], [7, 1], [6, 2], [6, 5], [3, 5]];
+// Marked cells spell the answer to the picture. They always lie in one row or one
+// column and read left-to-right or top-to-bottom.
+const MARKS = [[5, 2], [5, 3], [5, 5], [5, 6], [5, 7]];
 
 const isLetter = (r, c) => r >= 0 && c >= 0 && r < H && c < W && !"#.P".includes(SOL[r][c]);
 const key = (r, c) => r + "," + c;
@@ -277,7 +278,7 @@ for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
       d.className = "cell pic";
       d.setAttribute("role", "img");
       d.setAttribute("aria-label", "Слика: што гледаш? Одговорот е во жолтите полиња.");
-      d.innerHTML = CLOUD + '<span class="tag">Решение →</span>';
+      d.innerHTML = CLOUD + '<span class="tag">Решение ↓</span>';
       grid.appendChild(d);
     }
     continue;

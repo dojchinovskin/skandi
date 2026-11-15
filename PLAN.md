@@ -23,6 +23,9 @@ and plays them.
 | Input | On-screen Cyrillic keyboard (31 letters) on mobile, physical keyboard on desktop. |
 | Word list | TSV file in the repo (word, clue, optional picture). Claude drafts a starter list; owner reviews and extends it. |
 | Picture in grid | Yes. A block of cells holds an image that clues one or more answers. Only own or freely licensed images. |
+| Picture answer | Spelled by yellow (marked) cells shown in a **Решение** strip. The marked cells always lie in **one row or one column** (never scattered) and read left-to-right / top-to-bottom. Gaps (clue cells) between them are allowed. |
+| Words | Only real Macedonian words — no loanword slang (e.g. „ама“), no other languages. Applies to answers and clues. |
+| Keyboard | Macedonian layout (Љ Њ Е Р Т Ѕ…), not alphabetical. Approved. |
 | First grid size | About 7×9, growing as the word list grows. |
 | Workflow | Owner directs and reviews; Claude writes the code. One branch + one PR per milestone. |
 | Machines | Owner works on two laptops, switching between them. All state lives in this repo (see below). |
@@ -53,11 +56,14 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 - 2026-11-15: Plan agreed. Coding of the real project waits for the owner's green light.
   Design demo (milestone 0) built at `demo/index.html`: a single static file, hand-made 8×8 puzzle,
   picture block plus a solution word, on-screen Macedonian keyboard, light/dark. Waiting for the owner's feedback.
-  Demo content is placeholder: each 3×3 block is a symmetric word square, so every word appears twice.
-  The real generator won't do that.
+  Demo content is placeholder, hand-made; the real generator will build the grids.
 - 2026-11-15: Git installed on laptop 1; everything pushed to GitHub (`main`). Owner continues on the other PC.
+- 2026-11-15 (laptop 2): Owner reviewed the demo. Likes the look, the keyboard and the picture + solution idea.
+  Changes requested and done: solution cells must sit in one row or column (demo now reads ОБЛАК along row 6),
+  and only Macedonian words. Demo puzzle rebuilt with new, non-repeating words (every word appears once).
+  A private preview of the demo is published on claude.ai for viewing on phone.
+  Milestone 0 is effectively approved; waiting for the owner's green light to start milestone 1.
 
 ## Next session
 1. Clone (or `git pull`) the repo, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Collect the owner's design feedback on the demo (open `demo/index.html` in a browser), then start milestone 1
-   once the owner gives the green light.
+2. If the owner has given the green light, start milestone 1 (repo setup) on its own branch + PR.
