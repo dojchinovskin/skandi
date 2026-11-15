@@ -73,9 +73,10 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   `data/site/puzzles/0001.json`, Kotlin generator with `validate` + 9 tests, React/Vite site that loads the
   puzzle (placeholder screen), GitHub Actions build. In Claude's cloud workspace Maven/Gradle downloads are
   blocked, so the Kotlin code was compiled and tested there with Gradle's bundled Kotlin compiler; the real
-  `./gradlew build` runs in GitHub Actions. Web tests + build pass. PR waiting for the owner's review.
+  `./gradlew build` runs in GitHub Actions. Web tests + build pass. PR #1 opened; both GitHub Actions checks (Kotlin + web) are green. Waiting for the owner's review.
 
 ## Next session
 1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Check the milestone 1 PR: GitHub Actions green? Owner reviewed and merged?
+2. Check PR #1 (https://github.com/dojchinovskin/skandi/pull/1): has the owner reviewed and merged it?
+   Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
 3. Then milestone 2 (playable player UI with puzzle 0001) once the owner gives the green light.
