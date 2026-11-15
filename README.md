@@ -15,7 +15,7 @@ offline by a Kotlin tool and published as JSON; the website only plays them. See
 
 ## Running it
 
-Needs **JDK 17+** and **Node.js 22+**.
+Needs **JDK 17 or newer** (CI tests 17 and 25) and **Node.js 22.12 or newer**.
 
 ```sh
 # Generator: compile, run tests, validate every puzzle in data/site/puzzles

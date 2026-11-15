@@ -27,25 +27,29 @@ reads it. This file and `puzzle.schema.json` are the contract between the two.
 | Field | Meaning |
 |---|---|
 | `format` | Always `1` for this version. |
-| `id` | File name without `.json`. |
-| `number`, `date` | Shown in the header („Бр. 1 · 15 ноември 2026“). Date is `YYYY-MM-DD`. |
-| `width`, `height` | Grid size in cells. |
+| `id` | File name without `.json`; only `a-z`, `0-9` and `-`. |
+| `number`, `date` | Shown in the header („Бр. 1 · 15 ноември 2026“). `number` ≥ 1; `date` is a real date, `YYYY-MM-DD`. |
+| `width`, `height` | Grid size in cells, 3 to 30 each. |
 | `grid` | `height` strings of `width` characters each, top row first. |
-| `clues` | Clue texts, each placed in a `#` cell. |
-| `pictures` | Rectangles of `*` cells that show an image from `data/site/pictures/`. |
+| `clues` | `row`, `col` (0-based), `dir` (`across`/`down`), `text` (not blank), optional `highlight`. |
+| `pictures` | `row`, `col`, `width`, `height`, `file`, `alt` and `credit` (both not blank). `file` is a name in `data/site/pictures/`: lowercase `a-z`, `0-9`, `-`, ending in `.svg`, `.png`, `.jpg` or `.webp`. |
+
+No other fields are allowed anywhere, so a typo like `"higlight"` is an error rather than silently ignored.
 
 Grid characters:
 
 | Char | Cell |
 |---|---|
-| `А`–`Ш` | A letter cell; the character is the solution. Only the 31 uppercase Macedonian letters. |
+| `А Б В Г Д Ѓ Е Ж З Ѕ И Ј К Л Љ М Н Њ О П Р С Т Ќ У Ф Х Ц Ч Џ Ш` | A letter cell; the character is the solution. Only these 31 uppercase Macedonian letters (not Й, not Latin look-alikes). |
 | `#` | A clue cell. Holds one or two clues (at most one `across` and one `down`). |
 | `*` | Part of a picture. |
 | `.` | An empty filler cell (plain grey, no clue). |
 
 ## Rules
 
-A file is valid when all of these hold (the generator's `validate` command checks them):
+A file is valid when the fields above are correct and all of these hold. The generator's `validate`
+command checks everything. `puzzle.schema.json` checks the fields' form (not, for example, that a date
+really exists) and is what the website's tests use.
 
 1. `grid` has `height` rows of exactly `width` characters, using only the characters above.
 2. Each clue sits on a `#` cell; one cell has at most one clue per direction.
@@ -56,7 +60,7 @@ A file is valid when all of these hold (the generator's `validate` command check
 5. Every letter cell is part of at least one answer, and every `#` cell holds at least one clue.
 6. Pictures stay inside the grid, don't overlap, and together cover exactly the `*` cells.
 7. `highlight: true` marks an answer whose cells are shaded yellow (the picture's answer). It is a normal
-   answer with its own clue.
+   answer with its own clue. A puzzle has at most one highlighted answer per picture.
 
 Answers are not stored separately: both sides derive them from `grid` + `clues`, so they can never disagree.
 

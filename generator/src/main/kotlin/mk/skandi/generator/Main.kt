@@ -48,8 +48,10 @@ fun validateCommand(paths: List<String>): Boolean {
             if (puzzle.id != file.nameWithoutExtension) extra += "id \"${puzzle.id}\" must match the file name \"${file.nameWithoutExtension}\""
             // Picture files live next to the puzzles folder: data/site/pictures/.
             // absoluteFile, so a bare name like "0001.json" still has parent folders.
-            val siteDir = file.absoluteFile.parentFile.parentFile
-            puzzle.pictures.map { it.file }.filter { !File(siteDir, "pictures/$it").isFile }
+            // Compare against the real file names, so a wrong-case name fails here too (macOS and Windows
+            // ignore case on disk, GitHub Pages doesn't).
+            val pictureNames = File(file.absoluteFile.parentFile.parentFile, "pictures").list().orEmpty().toSet()
+            puzzle.pictures.map { it.file }.filter { it !in pictureNames }
                 .forEach { extra += "picture file pictures/$it not found" }
             r.copy(errors = r.errors + extra)
         } catch (e: FormatException) {

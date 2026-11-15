@@ -6,7 +6,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.doubleOrNull
 
 /** The 31 letters of the Macedonian alphabet, in alphabetical order. */
 const val MACEDONIAN_LETTERS = "АБВГДЃЕЖЗЅИЈКЛЉМНЊОПРСТЌУФХЦЧЏШ"
@@ -36,7 +36,8 @@ data class Picture(
     val alt: String,
     val credit: String,
 ) {
-    fun contains(c: Cell) = c.row in cell.row until cell.row + height && c.col in cell.col until cell.col + width
+    // Subtract instead of add, so a huge width/height can't overflow Int.
+    fun contains(c: Cell) = c.row - cell.row in 0 until height && c.col - cell.col in 0 until width
 }
 
 /** A clue's answer: the run of letter cells after the clue cell. */
@@ -76,7 +77,7 @@ fun parsePuzzle(text: String): Puzzle {
     } catch (e: Exception) {
         throw FormatException("not valid JSON: ${e.message?.lineSequence()?.first()}")
     }
-    val o = root.obj("puzzle")
+    val o = root.obj("puzzle").only("", PUZZLE_KEYS)
     return Puzzle(
         format = o.int("format"),
         id = o.str("id"),
@@ -86,8 +87,8 @@ fun parsePuzzle(text: String): Puzzle {
         height = o.int("height"),
         grid = o.arr("grid").mapIndexed { i, e -> e.str("grid[$i]") },
         clues = o.arr("clues").mapIndexed { i, e ->
-            val c = e.obj("clues[$i]")
             val p = "clues[$i]"
+            val c = e.obj(p).only(p, CLUE_KEYS)
             val dirName = c.str("dir", p)
             Clue(
                 cell = Cell(c.int("row", p), c.int("col", p)),
@@ -97,8 +98,8 @@ fun parsePuzzle(text: String): Puzzle {
             )
         },
         pictures = o.arr("pictures").mapIndexed { i, e ->
-            val c = e.obj("pictures[$i]")
             val p = "pictures[$i]"
+            val c = e.obj(p).only(p, PICTURE_KEYS)
             Picture(
                 cell = Cell(c.int("row", p), c.int("col", p)),
                 width = c.int("width", p),
@@ -113,6 +114,20 @@ fun parsePuzzle(text: String): Puzzle {
 
 // ---- small helpers for reading the JSON tree with readable error messages
 
+// Same field lists as format/puzzle.schema.json, which forbids any others (catches typos like "higlight").
+private val PUZZLE_KEYS = setOf("format", "id", "number", "date", "width", "height", "grid", "clues", "pictures")
+private val CLUE_KEYS = setOf("row", "col", "dir", "text", "highlight")
+private val PICTURE_KEYS = setOf("row", "col", "width", "height", "file", "alt", "credit")
+
+private fun JsonObject.only(path: String, allowed: Set<String>): JsonObject {
+    val unknown = keys - allowed
+    if (unknown.isNotEmpty()) {
+        val where = if (path.isEmpty()) "" else "$path: "
+        throw FormatException("${where}unknown field \"${unknown.first()}\" (allowed: ${allowed.joinToString()})")
+    }
+    return this
+}
+
 private fun JsonElement.obj(path: String) = this as? JsonObject ?: throw FormatException("$path: expected an object")
 
 private fun JsonElement.str(path: String): String =
@@ -126,7 +141,12 @@ private fun JsonObject.field(name: String, parent: String?): Pair<JsonElement, S
 private fun JsonObject.str(name: String, parent: String? = null): String = field(name, parent).let { (e, p) -> e.str(p) }
 
 private fun JsonObject.int(name: String, parent: String? = null): Int = field(name, parent).let { (e, p) ->
-    (e as? JsonPrimitive)?.takeIf { !it.isString }?.intOrNull ?: throw FormatException("$p: expected a whole number")
+    // 1 and 1.0 are the same number in JSON (and to the schema), so accept both.
+    val d = (e as? JsonPrimitive)?.takeIf { !it.isString }?.doubleOrNull
+    if (d == null || d != Math.floor(d) || d !in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble()) {
+        throw FormatException("$p: expected a whole number")
+    }
+    d.toInt()
 }
 
 private fun JsonObject.arr(name: String, parent: String? = null): JsonArray = field(name, parent).let { (e, p) ->
