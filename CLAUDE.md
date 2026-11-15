@@ -12,3 +12,10 @@ Read `PLAN.md` first: it holds every decision made so far, the milestones and th
   Don't rely on local-only memory.
 - Design: white and minimal like Wordle / Зборле. All UI text in Macedonian Cyrillic.
 - Never commit secrets or tokens.
+- Only real Macedonian words in puzzles and clues; no loanword slang.
+
+## Commands
+- Generator: `cd generator && ./gradlew build` (compiles, tests, validates `data/site/puzzles`).
+- Website: `cd web && npm install && npm test && npm run build`; `npm run dev` for a local server.
+- The puzzle format lives in `format/README.md`. Change it there first, then in both
+  `generator/.../Puzzle.kt` and `web/src/puzzle/types.ts`.

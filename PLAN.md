@@ -32,11 +32,15 @@ and plays them.
 | Workflow | Owner directs and reviews; Claude writes the code. One branch + one PR per milestone. |
 | Machines | Owner works on two laptops, switching between them. All state lives in this repo (see below). |
 
-## Repo layout (planned)
-- `generator/` — Kotlin CLI: reads the word list, writes puzzle JSON.
-- `web/` — TypeScript + React + Vite site.
-- `data/` — word list, pictures, generated puzzles.
-- `CLAUDE.md` — project rules for the coding agent.
+## Repo layout
+- `format/` — puzzle JSON format v1: `README.md` (fields + grid rules) and `puzzle.schema.json`.
+- `generator/` — Kotlin CLI (Gradle wrapper, JDK 17+). Command `validate`; generating comes in milestone 4.
+  Uses only the kotlinx-serialization JSON *tree* API (no compiler plugin) and JUnit 4 for tests.
+- `web/` — TypeScript + React + Vite site (Node 22+). Vitest checks puzzles against the schema.
+- `data/site/` — published files served at the site root: `puzzles/NNNN.json`, `pictures/*`.
+  The word list will live in `data/words/` (milestone 3), outside the published folder.
+- `.github/workflows/build.yml` — builds and tests both parts on every push to `main` and every PR.
+- `CLAUDE.md` — project rules for the coding agent. `README.md` — how to run things.
 
 ## Milestones
 | # | Milestone | Done when | Agent practice to learn |
@@ -65,7 +69,13 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   where a normal word would be), and only Macedonian words. Demo rebuilt with non-repeating words.
   A private preview of the demo is published on claude.ai for viewing on phone.
   Milestone 0 approved. Owner gave the green light for milestone 1.
+- 2026-11-15: Milestone 1 built on branch `m1-repo-setup`: puzzle format v1 + schema, the demo puzzle as
+  `data/site/puzzles/0001.json`, Kotlin generator with `validate` + 9 tests, React/Vite site that loads the
+  puzzle (placeholder screen), GitHub Actions build. In Claude's cloud workspace Maven/Gradle downloads are
+  blocked, so the Kotlin code was compiled and tested there with Gradle's bundled Kotlin compiler; the real
+  `./gradlew build` runs in GitHub Actions. Web tests + build pass. PR waiting for the owner's review.
 
 ## Next session
-1. Clone (or `git pull`) the repo, open the folder in Claude, and ask it to read `PLAN.md`.
-2. If the owner has given the green light, start milestone 1 (repo setup) on its own branch + PR.
+1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
+2. Check the milestone 1 PR: GitHub Actions green? Owner reviewed and merged?
+3. Then milestone 2 (playable player UI with puzzle 0001) once the owner gives the green light.

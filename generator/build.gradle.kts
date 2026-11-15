@@ -1,0 +1,45 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    kotlin("jvm") version "2.0.21"
+    application
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Only the JSON tree API is used (no serialization compiler plugin), so mapping is explicit.
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    testImplementation("junit:junit:4.13.2")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+kotlin {
+    compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+}
+
+application {
+    mainClass.set("mk.skandi.generator.MainKt")
+}
+
+// Run from the repo root so paths like data/site/puzzles work the same everywhere.
+tasks.named<JavaExec>("run") {
+    workingDir = rootDir.parentFile
+}
+
+// `./gradlew check` also validates every published puzzle.
+val validatePuzzles by tasks.registering(JavaExec::class) {
+    group = "verification"
+    description = "Validates all puzzles in data/site/puzzles against format/README.md."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set(application.mainClass)
+    workingDir = rootDir.parentFile
+    args("validate", "data/site/puzzles")
+}
+tasks.named("check") { dependsOn(validatePuzzles) }
