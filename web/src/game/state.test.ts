@@ -5,14 +5,16 @@ import { buildModel, keyOf, type Key } from "../puzzle/model";
 import type { Puzzle } from "../puzzle/types";
 import { type Action, type GameState, initialState, reduce } from "./state";
 
-const puzzle: Puzzle = JSON.parse(readFileSync(resolve(__dirname, "../../../data/site/puzzles/0001.json"), "utf8"));
+// A fixed copy of the first hand-made puzzle (straight arrows only), so content changes to the published
+// puzzles never break these rule tests.
+const puzzle: Puzzle = JSON.parse(readFileSync(resolve(__dirname, "fixtures/classic.json"), "utf8"));
 const model = buildModel(puzzle);
 const entry = (answer: string) => model.entries.find((e) => e.answer === answer)!;
 const run = (...actions: Action[]) => actions.reduce((s, a) => reduce(model, s, a), initialState(model));
 const typeWord = (word: string): Action[] => Array.from(word, (letter) => ({ type: "type", letter }) as Action);
 const k = (r: number, c: number): Key => keyOf(r, c);
 
-describe("model", () => {
+describe("model (classic fixture)", () => {
   it("derives every answer from grid + clues", () => {
     expect(model.entries.map((e) => e.answer)).toEqual([
       "ЛОВ", "ЕРА", "КОЛ", "ЛЕК", "ОРО", "ВАЛ", "ОБЛАК", "ДО", "СЕСТРА", "ОД", "БОС", "КРТ", "НА",
@@ -43,6 +45,26 @@ const split: Puzzle = {
   ],
   pictures: [],
 };
+
+describe("published puzzle 0001 (dense, bent arrows)", () => {
+  const p: Puzzle = JSON.parse(readFileSync(resolve(__dirname, "../../../data/site/puzzles/0001.json"), "utf8"));
+  const m = buildModel(p);
+  it("has no empty cells", () => expect(m.cells.flat().filter((c) => c.kind === "filler")).toHaveLength(0));
+  it("derives bent answers from their start cell", () => {
+    const bent = m.entries.filter((e) => e.bent).map((e) => `${e.answer}:${e.dir}:${e.start}`);
+    expect(bent).toEqual(["ВИНО:down:right", "БОЛ:across:below", "ТАБАН:across:below"]);
+  });
+  it("stacks a split cell with the right-starting clue on top", () => {
+    const cell = m.cells[6][0];
+    expect(cell.kind === "clue" && cell.clues.map((e) => e.answer)).toEqual(["ДЕН", "ТАБАН"]);
+  });
+  it("can be solved, and names the picture answer", () => {
+    let s = initialState(m);
+    for (const key of m.letterKeys) s = reduce(m, reduce(m, s, { type: "select", key }), { type: "reveal" });
+    expect(s.solved).toBe(true);
+    expect(s.toast?.text).toBe("Браво! Решението е ОБЛАК.");
+  });
+});
 
 describe("split clue cell", () => {
   const m = buildModel(split);

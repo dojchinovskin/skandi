@@ -3,7 +3,7 @@
 Shared by both test suites, so the Kotlin validator and `puzzle.schema.json` can't drift apart:
 `generator/.../FormatTestDataTest.kt` and `web/src/puzzle/puzzle.test.ts` both check every file here.
 
-`invalid/`: each file is puzzle 0001 with exactly one defect. Both sides must reject it, and the Kotlin test
+`invalid/`: each file is a valid puzzle with exactly one defect. Both sides must reject it, and the Kotlin test
 also checks that the error is about that defect (see `EXPECTED` in `FormatTestDataTest.kt`).
 
 | File | Defect |
@@ -22,6 +22,7 @@ also checks that the error is about that defect (see `EXPECTED` in `FormatTestDa
 | `format-2.json` | unknown `format` version |
 | `too-wide.json` | width 31 (limit is 30) |
 | `missing-field.json` | no `clues` field |
+| `bad-start.json` | clue `start` is `left` (only `right`/`below`) |
 | `unknown-picture-field.json` | picture has an extra `note` field |
 | `blank-credit.json` | picture `credit` is only spaces |
 

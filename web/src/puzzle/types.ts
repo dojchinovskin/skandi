@@ -2,11 +2,14 @@
 // (For a Kotlin reader: these are like data classes with only `val`s; `type` aliases have no runtime cost.)
 
 export type Dir = "across" | "down";
+/** Where the answer starts: the cell right of or below the clue cell. Default: right for across, below for down. */
+export type Start = "right" | "below";
 
 export interface Clue {
   row: number;
   col: number;
   dir: Dir;
+  start?: Start;
   text: string;
   highlight?: boolean;
 }

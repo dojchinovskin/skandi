@@ -34,7 +34,7 @@ class ValidatorTest {
     }
 
     @Test fun `unclued word is an error`() {
-        assertTrue(errorsOf(small()).any { "(2,1) going across" in it && "no clue" in it })
+        assertTrue(errorsOf(small()).any { "(2,1) going across" in it && "has no clue" in it })
     }
 
     @Test fun `wrong row length and bad characters are errors`() {
@@ -60,7 +60,7 @@ class ValidatorTest {
         )
         val e = errorsOf(p)
         assertTrue(e.any { "(0,0) holds no clue" in it })
-        assertTrue(e.any { "a second across clue in (2,0)" in it })
+        assertTrue(e.any { "a second clue in (2,0) starting right" in it })
     }
 
     @Test fun `pictures must cover exactly the star cells`() {
@@ -139,6 +139,77 @@ class ValidatorTest {
         assertTrue(typo is FormatException && "unknown field \"higlight\"" in typo.message!!)
         assertTrue(runCatching { parsePuzzle("{ not json") }.exceptionOrNull() is FormatException)
         assertTrue(runCatching { parsePuzzle(ok.replace("\"down\"", "\"left\"")) }.exceptionOrNull() is FormatException)
+    }
+
+    /** . # #      ДА across starts BELOW clue (0,1)  — bent
+     *  # Д А      ДО down   starts RIGHT of clue (1,0) — bent
+     *  # О Д      АД down from (0,2), ОД across from (2,0) — straight */
+    private val bentGrid = listOf(".##", "#ДА", "#ОД")
+
+    @Test fun `bent arrows - both kinds in a valid grid`() {
+        val p = Puzzle(
+            1, "bent", 1, "2026-11-15", 3, 3, bentGrid,
+            listOf(
+                Clue(Cell(0, 1), Dir.ACROSS, "Потврда", start = Start.BELOW),
+                Clue(Cell(1, 0), Dir.DOWN, "Предлог за правец", start = Start.RIGHT),
+                Clue(Cell(0, 2), Dir.DOWN, "Пекол"),
+                Clue(Cell(2, 0), Dir.ACROSS, "Предлог за потекло"),
+            ),
+            emptyList(),
+        )
+        assertEquals(emptyList<String>(), errorsOf(p))
+        assertEquals(listOf("ДА", "ДО", "АД", "ОД"), p.entries().map { it.answer })
+        assertEquals(listOf(true, true, false, false), p.clues.map { it.bent })
+    }
+
+    @Test fun `bent start on a clue cell is an error`() {
+        val p = Puzzle(1, "b", 1, "2026-11-15", 3, 3, bentGrid, listOf(Clue(Cell(0, 1), Dir.DOWN, "Х", start = Start.RIGHT)), emptyList())
+        assertTrue(errorsOf(p).any { "at least 2 letters, found 0" in it })
+    }
+
+    @Test fun `a word with two clues is an error`() {
+        val p = Puzzle(
+            1, "two", 1, "2026-11-15", 3, 3,
+            bentGrid,
+            listOf(
+                Clue(Cell(1, 0), Dir.ACROSS, "Потврда"), // ДА straight
+                Clue(Cell(0, 1), Dir.ACROSS, "Потврда пак", start = Start.BELOW), // ДА bent, same word
+                Clue(Cell(0, 1), Dir.DOWN, "Предлог"),
+                Clue(Cell(0, 2), Dir.DOWN, "Пекол"),
+                Clue(Cell(2, 0), Dir.ACROSS, "Предлог за потекло"),
+            ),
+            emptyList(),
+        )
+        assertTrue(errorsOf(p).any { "(1,1) going across has more than one clue" in it })
+    }
+
+    @Test fun `answer must begin a word, and at most two clues per cell`() {
+        val base = listOf(
+            Clue(Cell(1, 0), Dir.ACROSS, "А"),
+            Clue(Cell(0, 1), Dir.DOWN, "Б"),
+            Clue(Cell(0, 2), Dir.DOWN, "В"),
+            Clue(Cell(2, 0), Dir.ACROSS, "Г"),
+        )
+        val grid = bentGrid
+        // Clue (0,2) across starting below = (1,2), which comes right after the letter (1,1): mid-word.
+        val middle = Puzzle(1, "m", 1, "2026-11-15", 3, 3, grid, base + Clue(Cell(0, 2), Dir.ACROSS, "Средина", start = Start.BELOW), emptyList())
+        assertTrue(errorsOf(middle).any { "in the middle of a word" in it || "at least 2 letters" in it })
+        val three = Puzzle(1, "t", 1, "2026-11-15", 3, 3, grid, base + Clue(Cell(0, 1), Dir.ACROSS, "Х", start = Start.BELOW) + Clue(Cell(0, 1), Dir.DOWN, "Ц", start = Start.RIGHT), emptyList())
+        assertTrue(errorsOf(three).any { "3 clues in (0,1)" in it })
+    }
+
+    @Test fun `filler cells give a warning`() {
+        val p = small(grid = listOf(".##", "#ДО", "#АД"), clues = small().clues + Clue(Cell(2, 0), Dir.ACROSS, "Б"))
+        assertTrue(validate(p).warnings.any { "1 empty filler cell" in it })
+    }
+
+    @Test fun `parser reads start and rejects unknown values`() {
+        val ok = File(repoRoot, "data/site/puzzles/0001.json").readText()
+        val p = parsePuzzle(ok)
+        assertEquals(3, p.clues.count { it.bent })
+        assertEquals(Start.RIGHT, p.clues.first { it.text == "Пијалак од грозје" }.start)
+        val bad = runCatching { parsePuzzle(ok.replace("\"start\": \"right\"", "\"start\": \"left\"")) }.exceptionOrNull()
+        assertTrue(bad is FormatException && "start: must be right or below" in bad.message!!)
     }
 
     @Test fun `example puzzle in the repo is valid`() {

@@ -25,7 +25,9 @@ and plays them.
 | Picture in grid | Yes. A block of cells holds an image that clues one or more answers. Only own or freely licensed images. |
 | Picture answer | A normal entry (one whole row or column word) with its own clue cell, e.g. „Што гледаш на сликата?“. Its cells are shaded yellow, like the shaded entries in Macedonian magazines (see „100 Сканди“). Also shown in the **Решение** strip. |
 | Pictures per puzzle | One for now; the format should allow more later. |
-| Later idea | Split clue cells holding two clues (one across, one down), as in the magazines. |
+| Split clue cells | Supported: a clue cell holds up to two clues, as in the magazines. |
+| No empty cells | Published puzzles are fully dense: every cell is a letter, a clue or the picture (owner, 2026-11-15). The validator warns on filler cells. |
+| Bent arrows | A clue's answer can start in the cell right of it or below it (`start` in the format), as in magazines. Needed for dense grids: with straight arrows only, the rows/columns next to the edge would all have to be unbroken long words. |
 | Words | Only real Macedonian words — no loanword slang (e.g. „ама“), no other languages. Applies to answers and clues. |
 | Keyboard | Macedonian layout (Љ Њ Е Р Т Ѕ…), not alphabetical. Approved. |
 | First grid size | About 7×9, growing as the word list grows. |
@@ -88,7 +90,14 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 - 2026-11-15: Repo made public; GitHub Pages (Source: GitHub Actions) live at
   https://dojchinovskin.github.io/skandi/ — every push to `main` redeploys.
 
+- 2026-11-15: Owner: no empty rows/columns. Added bent arrows (format `start`, validator, player) on branch
+  `bent-arrows` and rebuilt puzzle 0001 fully dense (picture top-left, ОБЛАК down column 5, 19 answers)
+  with a search script; Claude reviewed the words and clues by hand.
+
 ## Notes for later milestones
+- Generator (milestone 4): dense grids need many 2–5 letter words and bent arrows. A search that repairs a
+  random layout cell by cell (simulated annealing) and then fills it worked well; random layouts alone
+  almost never satisfy the rules.
 - Clue length: on small phones (320px) clue cells are ~37px wide, and words longer than ~8 letters break
   mid-word (browsers can't hyphenate Macedonian). The generator (milestone 4) should prefer short clue words,
   or we add soft hyphens to long words in the word list.
@@ -106,6 +115,6 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 
 ## Next session
 1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Owner's feedback from playing https://dojchinovskin.github.io/skandi/ on phone and desktop.
+2. Check the bent-arrows PR (dense puzzle 0001): merged? Then the owner plays the new grid on the site.
    Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
 3. Then milestone 3 (word list: format, starter list, validation) once the owner gives the green light.
