@@ -92,7 +92,8 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 
 - 2026-11-15: Owner: no empty rows/columns. Added bent arrows (format `start`, validator, player) on branch
   `bent-arrows` and rebuilt puzzle 0001 fully dense (picture top-left, ОБЛАК down column 5, 19 answers)
-  with a search script; Claude reviewed the words and clues by hand.
+  with a search script; Claude reviewed the words and clues by hand. PR #4 reviewed (self + independent)
+  and merged; the dense grid is live on the site.
 
 ## Notes for later milestones
 - Generator (milestone 4): dense grids need many 2–5 letter words and bent arrows. A search that repairs a
@@ -115,6 +116,6 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 
 ## Next session
 1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Check the bent-arrows PR (dense puzzle 0001): merged? Then the owner plays the new grid on the site.
+2. Owner's feedback on the dense grid at https://dojchinovskin.github.io/skandi/.
    Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
 3. Then milestone 3 (word list: format, starter list, validation) once the owner gives the green light.
