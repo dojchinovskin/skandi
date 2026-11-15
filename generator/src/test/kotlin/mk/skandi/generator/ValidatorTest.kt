@@ -183,18 +183,32 @@ class ValidatorTest {
         assertTrue(errorsOf(p).any { "(1,1) going across has more than one clue" in it })
     }
 
-    @Test fun `answer must begin a word, and at most two clues per cell`() {
+    @Test fun `bent answer starting in the middle of a word is an error`() {
+        // # Л #   ЛЕК down column 1, clued bent from (0,0). The other three runs (rows 1–2 across,
+        // # Е Л   column 2 down) get straight clues. Words are not checked here, only the grid rules.
+        // # К О   Then a clue at (1,0), down starting right, would start at (1,1) = Е: inside ЛЕК.
+        val grid = listOf("#Л#", "#ЕЛ", "#КО")
+        val clues = listOf(
+            Clue(Cell(0, 0), Dir.DOWN, "Лек", start = Start.RIGHT),
+            Clue(Cell(1, 0), Dir.ACROSS, "Ред 1"),
+            Clue(Cell(2, 0), Dir.ACROSS, "Ред 2"),
+            Clue(Cell(0, 2), Dir.DOWN, "Колона 2"),
+        )
+        val ok = Puzzle(1, "w", 1, "2026-11-15", 3, 3, grid, clues, emptyList())
+        assertEquals(emptyList<String>(), errorsOf(ok))
+        val mid = ok.copy(clues = clues + Clue(Cell(1, 0), Dir.DOWN, "Средина", start = Start.RIGHT))
+        val e = errorsOf(mid)
+        assertTrue(e.toString(), e.any { "answer starts at (1,1), in the middle of a word" in it })
+    }
+
+    @Test fun `at most two clues per cell`() {
         val base = listOf(
             Clue(Cell(1, 0), Dir.ACROSS, "А"),
             Clue(Cell(0, 1), Dir.DOWN, "Б"),
             Clue(Cell(0, 2), Dir.DOWN, "В"),
             Clue(Cell(2, 0), Dir.ACROSS, "Г"),
         )
-        val grid = bentGrid
-        // Clue (0,2) across starting below = (1,2), which comes right after the letter (1,1): mid-word.
-        val middle = Puzzle(1, "m", 1, "2026-11-15", 3, 3, grid, base + Clue(Cell(0, 2), Dir.ACROSS, "Средина", start = Start.BELOW), emptyList())
-        assertTrue(errorsOf(middle).any { "in the middle of a word" in it || "at least 2 letters" in it })
-        val three = Puzzle(1, "t", 1, "2026-11-15", 3, 3, grid, base + Clue(Cell(0, 1), Dir.ACROSS, "Х", start = Start.BELOW) + Clue(Cell(0, 1), Dir.DOWN, "Ц", start = Start.RIGHT), emptyList())
+        val three = Puzzle(1, "t", 1, "2026-11-15", 3, 3, bentGrid, base + Clue(Cell(0, 1), Dir.ACROSS, "Х", start = Start.BELOW) + Clue(Cell(0, 1), Dir.DOWN, "Ц", start = Start.RIGHT), emptyList())
         assertTrue(errorsOf(three).any { "3 clues in (0,1)" in it })
     }
 
@@ -207,7 +221,7 @@ class ValidatorTest {
         val ok = File(repoRoot, "data/site/puzzles/0001.json").readText()
         val p = parsePuzzle(ok)
         assertEquals(3, p.clues.count { it.bent })
-        assertEquals(Start.RIGHT, p.clues.first { it.text == "Пијалак од грозје" }.start)
+        assertEquals(Start.RIGHT, p.clues.first { it.text == "Црвено или бело, во чаша" }.start)
         val bad = runCatching { parsePuzzle(ok.replace("\"start\": \"right\"", "\"start\": \"left\"")) }.exceptionOrNull()
         assertTrue(bad is FormatException && "start: must be right or below" in bad.message!!)
     }

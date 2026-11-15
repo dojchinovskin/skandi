@@ -105,8 +105,10 @@ h1 { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: 0.01em; }
   font-size: calc(var(--cell-w) * 0.148); line-height: 1.12; letter-spacing: -0.01em; font-weight: 500; text-align: center;
   overflow: hidden; overflow-wrap: anywhere; hyphens: auto;
 }
-.clue-part:has(.arr.r, .bent.r) { padding-right: 7px; } /* keep text clear of the arrow */
-.clue-part:has(.arr.d, .bent.b) { padding-bottom: 7px; }
+.clue-part:has(.arr.r) { padding-right: 7px; } /* keep text clear of the arrow */
+.clue-part:has(.arr.d) { padding-bottom: 7px; }
+.clue-part:has(.bent.r) { padding-right: 11px; } /* bent arrows are wider */
+.clue-part:has(.bent.b) { padding-bottom: 11px; }
 .clue.split .clue-part { font-size: calc(var(--cell-w) * 0.13); }
 .clue.split .clue-part + .clue-part { border-top: 1px solid var(--line); }
 .clue-part.hot { background: var(--word); color: var(--fg); }

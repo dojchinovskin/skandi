@@ -13,9 +13,9 @@ reads it. This file and `puzzle.schema.json` are the contract between the two.
   "height": 8,
   "grid": ["****##В#", "****О#ИМ", "..."],
   "clues": [
-    { "row": 1, "col": 5, "dir": "across", "text": "На нив (кратка заменка)" },
-    { "row": 0, "col": 5, "dir": "down", "start": "right", "text": "Пијалак од грозје" },
-    { "row": 0, "col": 4, "dir": "down", "text": "Што гледаш на сликата?", "highlight": true }
+    { "row": 1, "col": 5, "dir": "across", "text": "Кратка заменка: „... дадов“" },
+    { "row": 0, "col": 5, "dir": "down", "start": "right", "text": "Црвено или бело, во чаша" },
+    { "row": 0, "col": 4, "dir": "down", "text": "Што покажува сликата?", "highlight": true }
   ],
   "pictures": [
     { "row": 0, "col": 0, "width": 4, "height": 4, "file": "oblak.svg", "alt": "Облак и сонце", "credit": "Skandi" }
@@ -81,7 +81,7 @@ really exists) and is what the website's tests use.
 
 Answers are not stored separately: both sides derive them from `grid` + `clues`, so they can never disagree.
 
-Warnings (allowed, but the generator reports them): the same answer used twice.
+Warnings (allowed, but the generator reports them): the same answer used twice, and filler (`.`) cells.
 
 ## Changes
 

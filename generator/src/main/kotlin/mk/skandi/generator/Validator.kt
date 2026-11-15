@@ -92,7 +92,7 @@ fun validate(p: Puzzle): Report {
     val covered = entries.flatMap { it.cells }.toSet()
     for (cell in cells) {
         if (p.isLetter(cell) && cell !in covered) errors += "letter at $cell is not part of any answer"
-        if (p.charAt(cell) == CLUE && p.clues.none { it.cell == cell }) errors += "'#' at $cell holds no clue (use '.' for filler)"
+        if (p.charAt(cell) == CLUE && p.clues.none { it.cell == cell }) errors += "'#' at $cell holds no clue"
     }
 
     // Rule 6: pictures cover exactly the '*' cells

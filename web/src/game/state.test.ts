@@ -52,7 +52,7 @@ describe("published puzzle 0001 (dense, bent arrows)", () => {
   it("has no empty cells", () => expect(m.cells.flat().filter((c) => c.kind === "filler")).toHaveLength(0));
   it("derives bent answers from their start cell", () => {
     const bent = m.entries.filter((e) => e.bent).map((e) => `${e.answer}:${e.dir}:${e.start}`);
-    expect(bent).toEqual(["ВИНО:down:right", "БОЛ:across:below", "ТАБАН:across:below"]);
+    expect(bent).toEqual(["ВИНО:down:right", "СОЛ:across:below", "ТАБАН:across:below"]);
   });
   it("stacks a split cell with the right-starting clue on top", () => {
     const cell = m.cells[6][0];
@@ -63,6 +63,39 @@ describe("published puzzle 0001 (dense, bent arrows)", () => {
     for (const key of m.letterKeys) s = reduce(m, reduce(m, s, { type: "select", key }), { type: "reveal" });
     expect(s.solved).toBe(true);
     expect(s.toast?.text).toBe("Браво! Решението е ОБЛАК.");
+  });
+});
+
+// Independent of the published puzzles: one cell holding a bent down clue (starts right) and a bent across
+// clue (starts below).   # Д .
+//                        Н А .
+//                        . . .
+const bentPuzzle: Puzzle = {
+  format: 1, id: "bent", number: 1, date: "2026-11-15", width: 3, height: 3,
+  grid: ["#Д.", "НА.", "..."],
+  clues: [
+    { row: 0, col: 0, dir: "across", start: "below", text: "Предлог: ... маса" },
+    { row: 0, col: 0, dir: "down", start: "right", text: "Потврда" },
+  ],
+  pictures: [],
+};
+
+describe("bent arrows (fixture)", () => {
+  const m = buildModel(bentPuzzle);
+  it("derive answers from the start cell", () => {
+    expect(m.entries.map((e) => `${e.answer}:${e.bent}`)).toEqual(["НА:true", "ДА:true"]);
+  });
+  it("stack the right-starting clue on top, whatever its direction", () => {
+    const cell = m.cells[0][0];
+    expect(cell.kind === "clue" && cell.clues.map((e) => `${e.dir}:${e.start}`)).toEqual(["down:right", "across:below"]);
+  });
+  it("play like any other answer", () => {
+    let s = reduce(m, initialState(m), { type: "selectEntry", index: 1 }); // ДА, down from (0,1)
+    s = reduce(m, reduce(m, s, { type: "type", letter: "Д" }), { type: "type", letter: "А" });
+    s = reduce(m, s, { type: "selectEntry", index: 0 }); // НА: А is already there, so the cursor goes to (1,0)
+    expect(s.cursor).toBe(keyOf(1, 0));
+    s = reduce(m, s, { type: "type", letter: "Н" });
+    expect(s.solved).toBe(true);
   });
 });
 
