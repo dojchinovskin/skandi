@@ -84,7 +84,9 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 - 2026-11-15: PR #2 merged. Milestone 2 built on branch `m2-player-ui`: puzzle 0001 is playable in the React
   site with the approved design. Game logic is a pure reducer (`web/src/game/state.ts`); 56 web tests in total;
   components in `web/src/components/`. Supports split clue cells (two clues in one cell). Checked with
-  screenshots at 320px, 390px (light + dark) and desktop, playing through to the win. PR open, reviews in the PR.
+  screenshots at 320px, 390px (light + dark) and desktop, playing through to the win. PR #3 reviewed and merged.
+- 2026-11-15: Repo made public; GitHub Pages (Source: GitHub Actions) live at
+  https://dojchinovskin.github.io/skandi/ — every push to `main` redeploys.
 
 ## Notes for later milestones
 - Clue length: on small phones (320px) clue cells are ~37px wide, and words longer than ~8 letters break
@@ -104,6 +106,6 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 
 ## Next session
 1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Check the milestone 2 PR: merged?
+2. Owner's feedback from playing https://dojchinovskin.github.io/skandi/ on phone and desktop.
    Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
 3. Then milestone 3 (word list: format, starter list, validation) once the owner gives the green light.
