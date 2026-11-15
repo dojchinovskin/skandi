@@ -48,7 +48,8 @@ Grid characters:
 ## Rules
 
 A file is valid when the fields above are correct and all of these hold. The generator's `validate`
-command checks everything; `puzzle.schema.json` checks the fields and is what the website's tests use.
+command checks everything. `puzzle.schema.json` checks the fields' form (not, for example, that a date
+really exists) and is what the website's tests use.
 
 1. `grid` has `height` rows of exactly `width` characters, using only the characters above.
 2. Each clue sits on a `#` cell; one cell has at most one clue per direction.

@@ -16,6 +16,7 @@ export async function loadPuzzle(id: string): Promise<Puzzle> {
   } catch {
     throw new Error(`Сложувалката ${id} е оштетена.`);
   }
+  if (typeof data !== "object" || data === null) throw new Error(`Сложувалката ${id} е оштетена.`);
   if (data.format !== SUPPORTED_FORMAT) throw new Error("Оваа сложувалка бара понова верзија на страницата.");
   return data;
 }

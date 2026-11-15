@@ -23,7 +23,7 @@ the contract between them.
 3. Puzzle data: published puzzles are valid by the README rules, and every answer and clue is real
    Macedonian (no loanword slang, no other languages).
 4. Tests: do they cover what changed, including failure cases?
-5. Build, CI and config: would it break on the owner's laptops (Windows/macOS, JDK 17+, Node 22+)?
+5. Build, CI and config: would it break on the owner's laptops (Windows/macOS, JDK 17+, Node 22.12+)?
 6. UI work: Macedonian Cyrillic text only, the white minimal Wordle/Зборле look, works on phone and desktop.
 7. Anything else a reviewer should flag: security, maintainability, misleading docs.
 

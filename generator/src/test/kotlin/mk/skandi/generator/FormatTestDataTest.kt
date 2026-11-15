@@ -21,11 +21,34 @@ class FormatTestDataTest {
         listOf(e.message ?: "unreadable")
     }
 
-    @Test fun `every invalid file is rejected`() {
+    /** What each invalid file's error must mention, so a file can't pass by failing for another reason. */
+    private val EXPECTED = mapOf(
+        "bad-date" to "date",
+        "bad-dir" to "dir",
+        "bad-id" to "id:",
+        "blank-alt" to "alt is empty",
+        "blank-clue" to "text is empty",
+        "blank-credit" to "credit is empty",
+        "format-2" to "format",
+        "huge-picture" to "outside the grid",
+        "latin-letter" to "'O'",
+        "missing-field" to "clues: missing",
+        "picture-path" to "file \"../",
+        "picture-uppercase" to "file \"Oblak",
+        "too-wide" to "3 to 30",
+        "unknown-field" to "unknown field \"higlight\"",
+        "unknown-picture-field" to "unknown field \"note\"",
+        "unknown-top-field" to "unknown field \"extra\"",
+    )
+
+    @Test fun `every invalid file is rejected for its own defect`() {
         val invalid = files("invalid")
-        assertTrue("no test files found", invalid.size >= 10)
-        val accepted = invalid.filter { problems(it).isEmpty() }.map { it.name }
-        assertEquals("accepted but should be rejected", emptyList<String>(), accepted)
+        assertEquals("EXPECTED must list every file", EXPECTED.keys.sorted(), invalid.map { it.nameWithoutExtension })
+        for (file in invalid) {
+            val expected = EXPECTED.getValue(file.nameWithoutExtension)
+            val errors = problems(file)
+            assertTrue("${file.name}: expected an error mentioning <$expected>, got $errors", errors.any { expected in it })
+        }
     }
 
     @Test fun `every valid file is accepted`() {

@@ -113,7 +113,10 @@ class ValidatorTest {
         val clues = listOf(Clue(Cell(0, 2), Dir.DOWN, "А"), Clue(Cell(2, 0), Dir.ACROSS, "Б"))
         val pic = Picture(Cell(0, 0), 2, 2, "x.svg", "x", "x")
         assertTrue(errorsOf(small(grid, clues, listOf(pic.copy(cell = Cell(-1, 0))))).any { "outside the grid" in it })
-        assertTrue(errorsOf(small(grid, clues, listOf(pic.copy(height = Int.MAX_VALUE)))).any { "outside the grid" in it })
+        // Starting at row 1, so row + height would wrap past Int.MAX_VALUE with naive addition.
+        val huge = errorsOf(small(grid, clues, listOf(pic.copy(cell = Cell(1, 0), height = Int.MAX_VALUE))))
+        assertTrue(huge.any { "outside the grid" in it }) // pins the bounds check
+        assertTrue(huge.any { "picture covers (2,0)" in it }) // pins Picture.contains
         assertTrue(errorsOf(small(grid, clues, listOf(pic, pic.copy(width = 1)))).any { "overlap" in it })
     }
 

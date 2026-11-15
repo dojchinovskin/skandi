@@ -60,6 +60,10 @@ describe("loadPuzzle", () => {
     respond(null, false);
     await expect(loadPuzzle("9999")).rejects.toThrow("не е пронајдена");
   });
+  it("reports an empty (null) puzzle in Macedonian", async () => {
+    respond(null);
+    await expect(loadPuzzle("0001")).rejects.toThrow("оштетена");
+  });
   it("reports a network failure in Macedonian", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
     await expect(loadPuzzle("0001")).rejects.toThrow("Нема врска");
