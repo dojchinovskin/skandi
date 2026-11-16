@@ -7,26 +7,32 @@ import kotlin.system.exitProcess
 private const val USAGE = """Skandi generator
 
 Usage:
-  validate <file-or-folder>...   Check puzzle JSON files against format/README.md
+  validate <file-or-folder>...   Check puzzle JSON files against format/README.md (a folder: also index.json)
+  index <folder>                 Rebuild index.json, the archive list, in a puzzles folder
   words-check <words.tsv>        Check the word list against data/words/README.md
   generate [options]             Build a new puzzle from the word list
 
 Options for generate:
   --width N, --height N   grid size (default 7 × 9)
   --seed N                the same seed always gives the same puzzle (default: random)
-  --number N              puzzle number (default 1); the id is the number with 4 digits, e.g. 0002
-  --date YYYY-MM-DD       date shown on the puzzle (default: today)
+  --number N              puzzle number; the id is the number with 4 digits, e.g. 0002
+                          (default: from the --out file name, else 1)
+  --date YYYY-MM-DD       the day the puzzle comes out (default: the day after the newest puzzle in the
+                          --out folder, else today)
+  --avoid N               don't reuse answers of 3+ letters from the last N puzzles in the --out folder
+                          (default 3)
   --words FILE            word list (default data/words/words.tsv); pictures.tsv is read from the same folder
   --picture FILE|none     picture to show, e.g. oblak.svg (default: a random picture word); none for no picture
   --picture-size WxH      picture block in cells (default: about half the shorter side, e.g. 3x3 in 7×9)
-  --out FILE              write the puzzle JSON here, named NNNN.json after --number (never overwrites);
-                          without it, only a preview"""
+  --out FILE              write the puzzle JSON here, named NNNN.json after --number (never overwrites),
+                          and update index.json next to it; without it, only a preview"""
 
 fun main(args: Array<String>) {
     when (args.firstOrNull()) {
         "validate" -> exitProcess(if (validateCommand(args.drop(1))) 0 else 1)
         "words-check" -> exitProcess(if (wordsCheckCommand(args.drop(1))) 0 else 1)
         "generate" -> exitProcess(if (generateCommand(args.drop(1))) 0 else 1)
+        "index" -> exitProcess(if (indexCommand(args.drop(1))) 0 else 1)
         null, "help", "-h", "--help" -> println(USAGE)
         else -> {
             System.err.println("Unknown command: ${args[0]}\n\n$USAGE")
@@ -35,28 +41,34 @@ fun main(args: Array<String>) {
     }
 }
 
-/** Validates each file (folders: every *.json inside). Returns true when all are valid. */
+/**
+ * Validates each file. A folder means every puzzle in it plus the folder rules (format/README.md,
+ * "The archive"), including that index.json is up to date. Returns true when all are valid.
+ */
 fun validateCommand(paths: List<String>): Boolean {
     if (paths.isEmpty()) {
         System.err.println("validate: give at least one file or folder")
         return false
     }
+    val folders = mutableListOf<File>()
     val files = paths.flatMap { path ->
         val f = File(path)
         when {
-            f.isDirectory -> f.listFiles { x -> x.extension == "json" }.orEmpty().sortedBy { it.name }
+            f.isDirectory -> puzzleFiles(f).also { folders += f }
             f.isFile -> listOf(f)
             else -> { System.err.println("$path: not found"); return false }
         }
     }
     if (files.isEmpty()) {
-        System.err.println("validate: no .json files found")
+        System.err.println("validate: no puzzle files found")
         return false
     }
     var allOk = true
+    val parsed = HashMap<File, Puzzle>()
     for (file in files) {
         val report = try {
             val puzzle = parsePuzzle(file.readText())
+            parsed[file] = puzzle
             val r = validate(puzzle)
             val extra = mutableListOf<String>()
             if (puzzle.id != file.nameWithoutExtension) extra += "id \"${puzzle.id}\" must match the file name \"${file.nameWithoutExtension}\""
@@ -76,7 +88,27 @@ fun validateCommand(paths: List<String>): Boolean {
         report.warnings.forEach { println("  warning: $it") }
         allOk = allOk && report.ok
     }
+    for (folder in folders) {
+        val puzzles = puzzleFiles(folder).mapNotNull { parsed[it] }
+        val index = File(folder, INDEX_FILE).takeIf { it.isFile }?.readText()
+        val errors = checkArchive(puzzles, index)
+        println((if (errors.isEmpty()) "OK    " else "FAIL  ") + "${folder.path} (archive: ${puzzles.size} puzzles, $INDEX_FILE)")
+        errors.forEach { println("  error:   $it") }
+        allOk = allOk && errors.isEmpty()
+    }
     return allOk
+}
+
+/** Rebuilds index.json in a puzzles folder. */
+fun indexCommand(args: List<String>): Boolean {
+    val folder = args.singleOrNull()?.let(::File)
+    if (folder == null || !folder.isDirectory) {
+        System.err.println("index: give one puzzles folder, e.g. data/site/puzzles")
+        return false
+    }
+    val entries = writeIndex(folder)
+    println("Wrote ${File(folder, INDEX_FILE).path} (${entries.size} puzzles)")
+    return true
 }
 
 /**
@@ -142,7 +174,7 @@ private fun options(args: List<String>, known: Set<String>): Map<String, String>
 
 /** Builds a puzzle, prints a preview and writes it to --out if given. Returns true on success. */
 fun generateCommand(args: List<String>): Boolean {
-    val o = options(args, setOf("width", "height", "seed", "number", "date", "words", "out", "picture", "picture-size")) ?: return false
+    val o = options(args, setOf("width", "height", "seed", "number", "date", "words", "out", "picture", "picture-size", "avoid")) ?: return false
     fun fail(message: String): Boolean { System.err.println(message); return false }
     fun int(name: String, default: Int): Int? {
         val v = o[name] ?: return default
@@ -150,9 +182,20 @@ fun generateCommand(args: List<String>): Boolean {
     }
     val width = int("width", 7) ?: return false
     val height = int("height", 9) ?: return false
-    val number = int("number", 1) ?: return false
+    val out = o["out"]?.let(::File)
+    // Number: --number, else the --out file name (0003.json → 3), else 1.
+    val numberFromName = out?.name?.let { Regex("""(\d{4})\.json""").matchEntire(it) }?.groupValues?.get(1)?.toInt()
+    val number = int("number", numberFromName ?: 1) ?: return false
+    val avoid = int("avoid", 3) ?: return false
+    if (avoid < 0) return fail("--avoid: must be 0 or more")
+    // The puzzles already in the --out folder: for the default date and for answers to avoid.
+    val earlier = out?.absoluteFile?.parentFile?.takeIf { it.isDirectory }?.let(::puzzleFiles).orEmpty()
+        .mapNotNull { runCatching { parsePuzzle(it.readText()) }.getOrNull() }
+        .filter { it.number < number }.sortedBy { it.number }
     val seed = o["seed"]?.let { it.toLongOrNull() ?: return fail("--seed: expected a number, got \"$it\"") } ?: Random().nextLong()
-    val date = o["date"] ?: java.time.LocalDate.now().toString()
+    // Date: --date, else the day after the newest earlier puzzle (one a day), else today.
+    val date = o["date"] ?: earlier.maxOfOrNull { it.date }?.takeIf(::isRealDate)?.let { java.time.LocalDate.parse(it).plusDays(1).toString() }
+        ?: java.time.LocalDate.now().toString()
     if (width !in MIN_SIZE..MAX_SIZE || height !in MIN_SIZE..MAX_SIZE) return fail("--width/--height: must be $MIN_SIZE to $MAX_SIZE")
     if (number < 1) return fail("--number: must be 1 or more")
     // Check the date before the slow part, with the same rule as the validator.
@@ -165,7 +208,6 @@ fun generateCommand(args: List<String>): Boolean {
     if (picture == "none" && pictureSize != null) return fail("--picture-size: there is no picture with --picture none")
     val id = "%04d".format(number)
 
-    val out = o["out"]?.let(::File)
     if (out != null) {
         if (out.exists()) return fail("${out.path} already exists; not overwriting")
         // A puzzle's id must match its file name (validate checks it), so catch a mismatch now.
@@ -180,6 +222,13 @@ fun generateCommand(args: List<String>): Boolean {
     val pictures = if (picturesFile.isFile) parsePictureList(picturesFile.readText()) else null
     if (pictures != null && !pictures.report.ok) return fail("${picturesFile.path} has errors; run words-check first")
 
+    // Variety: leave out answers of 3+ letters (so also their pictures) used in the last few puzzles.
+    // 2-letter words (prepositions, pronouns) may repeat; there are too few to avoid.
+    val recent = earlier.takeLast(avoid)
+    val avoided = recent.flatMap { p -> p.entries().map { it.answer } }.filter { it.length >= 3 }.toSet()
+    val words = list.words.filter { it.answer !in avoided }
+    if (recent.isNotEmpty()) println("Avoiding ${avoided.size} answers used in ${recent.joinToString { it.id }}")
+
     val request = GenerateRequest(
         width, height, seed, number, date, id,
         withPicture = picture != "none",
@@ -188,7 +237,7 @@ fun generateCommand(args: List<String>): Boolean {
     )
     val started = System.nanoTime()
     val result = try {
-        generate(list.words, request, pictures?.pictures.orEmpty())
+        generate(words, request, pictures?.pictures.orEmpty())
     } catch (e: GenerateException) {
         return fail("Can't generate: ${e.message}")
     }
@@ -205,6 +254,8 @@ fun generateCommand(args: List<String>): Boolean {
         out.absoluteFile.parentFile.mkdirs()
         out.writeText(puzzleToJson(p))
         println("Wrote ${out.path}")
+        val entries = writeIndex(out.absoluteFile.parentFile)
+        println("Updated ${File(out.parentFile, INDEX_FILE).path} (${entries.size} puzzles)")
     }
     return true
 }

@@ -83,6 +83,33 @@ Answers are not stored separately: both sides derive them from `grid` + `clues`,
 
 Warnings (allowed, but the generator reports them): the same answer used twice, and filler (`.`) cells.
 
+## The archive: `index.json`
+
+`data/site/puzzles/index.json` lists every published puzzle, oldest first, so the website can find them (a
+static site can't list a folder). The generator rewrites it whenever it writes a puzzle; `validate` on the
+folder fails if it doesn't match the puzzle files.
+
+```json
+{
+  "format": 1,
+  "puzzles": [
+    { "id": "0001", "number": 1, "date": "2026-11-15" },
+    { "id": "0002", "number": 2, "date": "2026-11-17" }
+  ]
+}
+```
+
+Rules for the folder (checked by `validate data/site/puzzles`):
+
+1. Every puzzle's `id` is its `number` with four digits (`0007` for 7), and numbers are unique.
+2. No two puzzles share a `date`: one puzzle a day. Dates go up with numbers.
+3. `index.json` has exactly the puzzles in the folder, with the same `id`, `number` and `date`, sorted by
+   number.
+
+The website shows only puzzles dated today or earlier (Skopje time) and opens the newest of those, so a batch
+generated ahead of time comes out one a day without a new deploy. Future puzzles are still downloadable by
+anyone who guesses the file name; this is a hobby site, not a vault.
+
 ## Changes
 
 New versions bump `format`. The website refuses formats it doesn't know.

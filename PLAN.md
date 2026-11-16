@@ -139,6 +139,17 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
     fresh run (would break CI on the first new word), a stack trace on a huge `--picture-size`, `--picture-size`
     silently ignored with `--picture none`, `NONE` not accepted, README example that overwrote 0002.
 
+- 2026-11-16 (late): PR #7 merged. Owner gave the green light for milestone 6 and chose: **one puzzle per day**
+  (the site shows puzzles dated today or earlier, Skopje time, and opens today's) and **7 new puzzles**
+  (0003–0009, dated 2026-11-18 to 11-24). Work in progress on branch `m6-archive` (not yet compiled or
+  tested; stopped mid-way at the owner's request):
+  - Done: `format/README.md` documents `data/site/puzzles/index.json` and the folder rules (id = number with 4
+    digits, unique numbers and dates, dates go up, index matches the files). `Archive.kt` (index model,
+    JSON, `checkArchive`, `puzzleFiles` excluding index.json, `writeIndex`). `validate <folder>` checks the
+    archive; new `index <folder>` command. `generate`: number from the `--out` file name, date defaults to
+    the day after the newest puzzle, `--avoid N` (default 3) skips 3+ letter answers of the last N puzzles,
+    and index.json is rewritten after writing.
+
 ## Notes for later milestones
 - Generator quality grows with the word list: more 3–5 letter words mean fewer 2-letter answers (prepositions,
   short pronouns) and faster generation. `words-check` prints the counts per length.
@@ -165,10 +176,18 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   normal answer read left to right, so they added nothing.
 
 ## Next session
-1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Owner keeps reviewing `data/words/words.tsv` and adding words, especially 3–5 letters.
-3. Owner reviews the milestone 5 PR (play https://dojchinovskin.github.io/skandi/?p=0002 after merge), then
-   milestone 6 (puzzle archive: list of puzzles, pick one, deploy several).
+1. `git pull`, `git checkout m6-archive`, open the folder in Claude, and ask it to read `PLAN.md`.
+2. Finish milestone 6 on `m6-archive`:
+   - Compile and fix; update tests: existing `CliTest` folder tests need an index.json; add tests for
+     `Archive.kt`, `index`, `validate` archive errors, `generate` defaults (number from file name, next date,
+     `--avoid`, index rewritten).
+   - Run `index data/site/puzzles` to create index.json for 0001 and 0002.
+   - Generate 0003–0009 (`generate --out data/site/puzzles/000N.json --seed …`), review words and clues.
+   - Web: load index.json; pure helpers for today in Europe/Skopje, visible puzzles, which one to open
+     (`?p=` for a specific one; a future one says when it comes out); „Архива“ button in the header and an
+     archive screen listing visible puzzles (newest first, „Бр. N · date“, links to `?p=`). The web test
+     that reads every .json in data/site/puzzles must skip index.json; add a schema/test for the index.
+   - Screenshots (phone, dark, 320px), play one to the win, self-review, PR, independent reviewer.
    Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
    Maven/Gradle downloads are blocked there too: compile and test the Kotlin code with the Kotlin compiler
    bundled in /opt/gradle/lib (kotlin-compiler-embeddable, kotlinx-serialization-json, junit, annotations jars);
