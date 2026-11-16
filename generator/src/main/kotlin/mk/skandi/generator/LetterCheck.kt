@@ -20,15 +20,24 @@ class LetterCheck(words: List<Word>) {
         }
     }
 
-    /** How many slots end up with no word that fits; 0 means the layout passes this check. */
-    fun deadSlots(slots: List<Slot>): Int {
+    /**
+     * How many slots end up with no word that fits; 0 means the layout passes this check.
+     * [fixed] pins a word to a slot (by index), as the picture's answer is.
+     */
+    fun deadSlots(slots: List<Slot>, fixed: Map<Int, String> = emptyMap()): Int {
         if (slots.isEmpty()) return 0
         if (slots.any { it.length !in byLength }) return slots.count { it.length !in byLength }
         val width = slots.maxOf { maxOf(it.start.col, it.cell(it.length - 1).col) } + 1
         val height = slots.maxOf { maxOf(it.start.row, it.cell(it.length - 1).row) } + 1
         val cellLetters = IntArray(width * height) { ALL_LETTERS } // allowed letters per cell, one bit per letter
         val fits = LongArray(longs(byLength.values.maxOf { it.size }))
-        val domains = slots.map { s -> LongArray(longs(byLength.getValue(s.length).size)).also { it.setAll(byLength.getValue(s.length).size) } }
+        val domains = slots.mapIndexed { i, s ->
+            val list = byLength.getValue(s.length)
+            LongArray(longs(list.size)).also { d ->
+                val word = fixed[i]
+                if (word == null) d.setAll(list.size) else list.indexOf(word).let { w -> if (w >= 0) d.set(w) }
+            }
+        }
         val dead = BooleanArray(slots.size)
         var changed = true
         while (changed) {

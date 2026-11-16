@@ -27,8 +27,27 @@ loses the Cyrillic letters and its "Unicode Text" isn't UTF-8 (the check fails l
 | `слика` | no | A picture in `data/site/pictures/` that shows this word; the word can then be a puzzle's picture answer. |
 
 **Picture answers.** When the generator uses a word as a picture answer, its clue is always the same
-(„Што покажува сликата?“) and comes from the generator, not from this file. So `опис` holds only ordinary
+(„Што е на сликата?“) and comes from the generator, not from this file. So `опис` holds only ordinary
 clues, which work in any puzzle, with or without the picture.
+
+## Pictures: `pictures.tsv`
+
+Every picture a word points to also needs a line in `pictures.tsv` (same folder), with the description
+shown to screen readers and the credit shown on hover. Same rules: tabs, header, `#` comments.
+
+```
+слика	опис	извор
+oblak.svg	Облак и сонце	Skandi
+```
+
+| Column | What |
+|---|---|
+| `слика` | File in `data/site/pictures/`, same name rules as above. |
+| `опис` | What the picture shows (the `alt` text). |
+| `извор` | Who made it, or the free licence and author. Only own or freely licensed images. |
+
+`words-check` fails if a word's picture isn't listed here, and warns about pictures no word uses.
+Pictures drawn for Skandi are simple SVGs on a 100×100 canvas with a light background, like `oblak.svg`.
 
 - The first line that isn't blank or a comment is the header: `збор	опис	слика`, or `збор	опис` for a list
   without pictures (then no line may have a third column).

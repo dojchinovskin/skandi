@@ -150,3 +150,50 @@ private fun clueWarnings(clue: String): List<String> {
         .forEach { warnings += "has the long word „$it“ (${it.length} letters; may break on small phones)" }
     return warnings
 }
+
+/** A picture a word can be shown with: file in data/site/pictures, description (alt text) and credit. */
+data class PictureInfo(val file: String, val alt: String, val credit: String, val line: Int)
+
+data class PictureList(val pictures: Map<String, PictureInfo>, val report: Report)
+
+/**
+ * Parses data/words/pictures.tsv: header `слика<TAB>опис<TAB>извор`, then one picture per line.
+ * Blank lines and `#` comments are ignored. [pictureNames] as in [parseWordList].
+ */
+fun parsePictureList(text: String, pictureNames: Set<String>? = null): PictureList {
+    val errors = mutableListOf<String>()
+    val pictures = LinkedHashMap<String, PictureInfo>()
+    val lines = text.removePrefix("﻿").split("\n").map { it.removeSuffix("\r") }
+    val headerIndex = lines.indexOfFirst { it.isNotBlank() && !it.startsWith("#") }
+    if (headerIndex < 0) return PictureList(emptyMap(), Report(listOf("the file is empty: expected the header слика<TAB>опис<TAB>извор"), emptyList()))
+    if (lines[headerIndex].split("\t").map { it.trim() } != listOf("слика", "опис", "извор")) {
+        errors += "line ${headerIndex + 1}: header must be слика<TAB>опис<TAB>извор"
+    }
+    for (i in headerIndex + 1 until lines.size) {
+        val raw = lines[i]
+        if (raw.isBlank() || raw.startsWith("#")) continue
+        val n = i + 1
+        val cols = raw.split("\t").map { it.trim() }
+        if (cols.size != 3) { errors += "line $n: expected 3 columns separated by tabs, got ${cols.size}"; continue }
+        val (file, alt, credit) = cols
+        val rowErrors = mutableListOf<String>()
+        if (!PICTURE_FILE.matches(file)) rowErrors += "line $n: picture \"$file\" must be lowercase a-z, 0-9, '-' with .svg/.png/.jpg/.webp"
+        else if (pictureNames != null && file !in pictureNames) rowErrors += "line $n: picture file pictures/$file not found"
+        if (alt.isEmpty()) rowErrors += "line $n ($file): опис is empty"
+        if (credit.isEmpty()) rowErrors += "line $n ($file): извор is empty"
+        pictures[file]?.let { rowErrors += "line $n: $file is already on line ${it.line}" }
+        errors += rowErrors
+        if (rowErrors.isEmpty()) pictures[file] = PictureInfo(file, alt, credit, n)
+    }
+    return PictureList(pictures, Report(errors, emptyList()))
+}
+
+/** Words whose picture has no line in the picture list (errors), and pictures no word uses (warnings). */
+fun crossCheckPictures(words: WordList, pictures: PictureList): Report {
+    val errors = words.words.filter { it.picture != null && it.picture !in pictures.pictures }
+        .map { "words line ${it.line} (${it.answer}): picture ${it.picture} is not in pictures.tsv" }
+    val used = words.words.mapNotNull { it.picture }.toSet()
+    val warnings = pictures.pictures.values.filter { it.file !in used }
+        .map { "pictures line ${it.line}: ${it.file} isn't used by any word" }
+    return Report(errors, warnings)
+}
