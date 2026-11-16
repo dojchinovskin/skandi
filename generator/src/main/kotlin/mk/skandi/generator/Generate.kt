@@ -13,6 +13,8 @@ data class GenerateRequest(
     val id: String = "%04d".format(number),
     /** Layouts to try before giving up; each gets a fresh annealing run and a fill attempt. */
     val attempts: Int = 200,
+    /** Give up after this long too (checked between layouts), e.g. when the word list is too small. */
+    val timeLimitMillis: Long = 60_000,
 )
 
 /** A generated puzzle plus how much work it took (shown by the command, useful for tuning). */
@@ -23,7 +25,8 @@ const val MIN_WORDS_PER_LENGTH = 10
 
 /**
  * Builds a valid, fully dense puzzle (no filler cells, no pictures) from [words], or returns null after
- * [GenerateRequest.attempts] layouts. The same request and words always give the same puzzle.
+ * [GenerateRequest.attempts] layouts or [GenerateRequest.timeLimitMillis]. The same request and words always
+ * give the same puzzle (only giving up depends on the clock).
  */
 fun generate(words: List<Word>, request: GenerateRequest): Generated? {
     require(request.width in MIN_SIZE..MAX_SIZE && request.height in MIN_SIZE..MAX_SIZE) { "size must be $MIN_SIZE to $MAX_SIZE" }
@@ -31,10 +34,12 @@ fun generate(words: List<Word>, request: GenerateRequest): Generated? {
     val filler = Filler(words)
     val lengths = filler.lengths.filterValues { it >= MIN_WORDS_PER_LENGTH }.keys
     require(lengths.isNotEmpty()) { "the word list needs at least $MIN_WORDS_PER_LENGTH words of some length" }
-    val goal = LayoutGoal(lengths)
+    val goal = LayoutGoal(lengths, letters = LetterCheck(words))
 
     var layoutsFound = 0
+    val deadline = System.nanoTime() + request.timeLimitMillis * 1_000_000
     for (attempt in 1..request.attempts) {
+        if (System.nanoTime() > deadline) break
         val layout = searchLayout(request.width, request.height, goal, random) ?: continue
         layoutsFound++
         val fill = filler.fill(layout.slots, random) ?: continue
@@ -51,7 +56,10 @@ fun generate(words: List<Word>, request: GenerateRequest): Generated? {
 fun toPuzzle(layout: Layout, fill: Map<Slot, Word>, request: GenerateRequest, random: Random): Puzzle {
     val grid = Array(layout.height) { r -> CharArray(layout.width) { c -> if (layout.isClue(Cell(r, c))) CLUE else FILLER } }
     for ((slot, word) in fill) slot.cells.forEachIndexed { i, c -> grid[c.row][c.col] = word.answer[i] }
-    val clues = layout.assignment.spots.map { (slot, spot) ->
+    // Go through slots in layout order, not map order: Slot's hash includes an enum, whose hash differs
+    // between JVM runs, and the random clue choices must happen in the same order for the same seed.
+    val clues = layout.slots.map { slot ->
+        val spot = layout.assignment.spots.getValue(slot)
         val word = fill.getValue(slot)
         Clue(spot.cell, slot.dir, word.clues[random.nextInt(word.clues.size)], start = spot.start)
     }.sortedWith(compareBy({ it.cell.row }, { it.cell.col }, { it.start }))

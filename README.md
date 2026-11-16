@@ -8,7 +8,7 @@ offline by a Kotlin tool and published as JSON; the website only plays them. See
 | Folder | What |
 |---|---|
 | `format/` | The puzzle JSON format (`README.md`) and its JSON Schema. The only contract between the two parts. |
-| `generator/` | Kotlin command-line tool (Gradle). Today: `validate` and `words-check`. Generating comes in milestone 4. |
+| `generator/` | Kotlin command-line tool (Gradle): `generate` builds puzzles from the word list; `validate` and `words-check` check files. |
 | `web/` | The website: TypeScript + React + Vite. |
 | `data/site/` | Published files, served as-is by the website: `puzzles/*.json`, `pictures/*`. |
 | `data/words/` | The word list the generator picks answers and clues from (`words.tsv`, format in its `README.md`). Not published. |
@@ -24,6 +24,9 @@ cd generator
 ./gradlew build                                  # Windows: gradlew.bat build
 ./gradlew run --args="validate data/site/puzzles/0001.json"
 ./gradlew run --args="words-check data/words/words.tsv"   # errors, warnings, words per length
+./gradlew run --args="generate --seed 11 --number 2"        # preview a new 7×9 puzzle
+./gradlew run --args="generate --seed 11 --number 2 --out data/site/puzzles/0002.json"
+./gradlew run --args="help"                                 # all options
 
 # Website
 cd web

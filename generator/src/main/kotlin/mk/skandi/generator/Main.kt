@@ -116,7 +116,8 @@ private fun options(args: List<String>, known: Set<String>): Map<String, String>
     while (i < args.size) {
         val name = args[i].removePrefix("--")
         if (!args[i].startsWith("--") || name !in known) { System.err.println("unknown option ${args[i]}\n\n$USAGE"); return null }
-        val value = args.getOrNull(i + 1) ?: run { System.err.println("${args[i]} needs a value"); return null }
+        val value = args.getOrNull(i + 1)?.takeUnless { it.startsWith("--") }
+            ?: run { System.err.println("${args[i]} needs a value"); return null }
         result[name] = value
         i += 2
     }
@@ -126,7 +127,10 @@ private fun options(args: List<String>, known: Set<String>): Map<String, String>
 /** Builds a puzzle, prints a preview and writes it to --out if given. Returns true on success. */
 fun generateCommand(args: List<String>): Boolean {
     val o = options(args, setOf("width", "height", "seed", "number", "date", "words", "out")) ?: return false
-    fun int(name: String, default: Int): Int? = o[name]?.let { v -> v.toIntOrNull() ?: run { System.err.println("--$name: expected a number, got \"$v\""); null } } ?: default
+    fun int(name: String, default: Int): Int? {
+        val v = o[name] ?: return default
+        return v.toIntOrNull() ?: run { System.err.println("--$name: expected a number, got \"$v\""); null }
+    }
     val width = int("width", 7) ?: return false
     val height = int("height", 9) ?: return false
     val number = int("number", 1) ?: return false
@@ -151,7 +155,7 @@ fun generateCommand(args: List<String>): Boolean {
     val result = generate(list.words, request)
     val ms = (System.nanoTime() - started) / 1_000_000
     if (result == null) {
-        println("No puzzle after ${request.attempts} layouts (seed $seed, ${ms} ms). Try another seed, a smaller grid, or more short words.")
+        println("No puzzle found (seed $seed, ${ms} ms). Try another seed, a smaller grid, or more 2–5 letter words.")
         return false
     }
     val p = result.puzzle

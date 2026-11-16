@@ -176,7 +176,15 @@ data class LayoutGoal(
     /** Answer lengths the word list can fill; a slot of any other length counts as a fault. */
     val lengths: Set<Int>,
     /** Share of cells that are clue cells; magazine grids have about a third. */
-    val clueShare: Double = 0.33,
+    val clueShare: Double = 0.30,
+    /**
+     * Preference against 2-letter answers (mostly prepositions and short pronouns), per slot. Tuned on the
+     * starter list (7×9, 2026-11-17): 0 gives 46% 2-letter answers, 0.75 gives about 32% at ~1.6 s a puzzle;
+     * higher costs a lot of time for little gain.
+     */
+    val shortPenalty: Double = 0.75,
+    /** If set, slots the word list certainly can't fill count as faults too. */
+    val letters: LetterCheck? = null,
 )
 
 /**
@@ -185,36 +193,42 @@ data class LayoutGoal(
  * so it adds a fraction and never decides between usable and not.
  */
 fun faults(layout: Layout, goal: LayoutGoal): Int =
-    layout.orphans() + layout.slots.count { it.length !in goal.lengths } + layout.assignment.missing
+    layout.orphans() + layout.slots.count { it.length !in goal.lengths } + layout.assignment.missing +
+        (goal.letters?.deadSlots(layout.slots) ?: 0)
 
-private fun cost(layout: Layout, goal: LayoutGoal): Double {
+/** Faults plus preferences; lower is better. Faults weigh most, so they're fixed first. */
+private fun cost(layout: Layout, goal: LayoutGoal, faults: Int): Double {
     val target = goal.clueShare * layout.width * layout.height
-    return 3.0 * faults(layout, goal) + 0.25 * abs(layout.clueCells.size - target)
+    return 3.0 * faults + 0.25 * abs(layout.clueCells.size - target) +
+        goal.shortPenalty * layout.slots.count { it.length == 2 }
 }
 
 /**
  * Searches for a usable layout by simulated annealing: start from random cells, flip one cell at a time,
  * keep changes that lower [cost] (and sometimes ones that raise it, less often as it cools).
- * Returns null if [steps] flips don't reach a usable layout; the caller then tries another seed.
+ * Returns null if [steps] flips don't reach a usable layout; the caller then tries again.
  */
 fun searchLayout(width: Int, height: Int, goal: LayoutGoal, random: Random, steps: Int = 30_000): Layout? {
     var current = Layout(width, height, BooleanArray(width * height) { random.nextDouble() < goal.clueShare })
     // The top-left cell is always a clue: a letter there could have no clue next to it.
     if (!current.isClue(Cell(0, 0))) current = current.flip(Cell(0, 0))
-    var currentCost = cost(current, goal)
+    var currentFaults = faults(current, goal)
+    var currentCost = cost(current, goal, currentFaults)
     val startTemp = 2.0
     val endTemp = 0.05
     for (step in 0 until steps) {
-        if (faults(current, goal) == 0) return current
+        if (currentFaults == 0) return current
         val temp = startTemp * Math.pow(endTemp / startTemp, step.toDouble() / steps)
         val cell = Cell(random.nextInt(height), random.nextInt(width))
         if (cell == Cell(0, 0)) continue
         val next = current.flip(cell)
-        val nextCost = cost(next, goal)
+        val nextFaults = faults(next, goal)
+        val nextCost = cost(next, goal, nextFaults)
         if (nextCost <= currentCost || random.nextDouble() < exp((currentCost - nextCost) / temp)) {
             current = next
+            currentFaults = nextFaults
             currentCost = nextCost
         }
     }
-    return if (faults(current, goal) == 0) current else null
+    return if (currentFaults == 0) current else null
 }
