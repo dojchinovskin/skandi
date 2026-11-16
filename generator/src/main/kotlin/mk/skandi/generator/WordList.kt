@@ -27,6 +27,11 @@ private val LOOKALIKES = mapOf(
 private fun isLatin(c: Char) = c.isLetter() && Character.UnicodeScript.of(c.code) == Character.UnicodeScript.LATIN
 private fun isCyrillic(c: Char) = c.isLetter() && Character.UnicodeScript.of(c.code) == Character.UnicodeScript.CYRILLIC
 
+private val SPACES = Regex("""\s+""")
+
+/** Invisible characters (zero-width space, joiners, direction marks, BOM…) and control characters. */
+private fun isInvisible(c: Char) = Character.getType(c).let { it == Character.FORMAT.toInt() || it == Character.CONTROL.toInt() }
+
 /** Splits text into its words: runs of letters (combining accents included, so they stay attached). */
 private val TEXT_WORD = Regex("""[\p{L}\p{M}]+""")
 
@@ -43,9 +48,12 @@ fun parseWordList(text: String, pictureNames: Set<String>? = null): WordList {
     val lines = text.removePrefix("﻿").split("\n").map { it.removeSuffix("\r") }
     val headerIndex = lines.indexOfFirst { it.isNotBlank() && !it.startsWith("#") }
     if (headerIndex < 0) return WordList(emptyList(), Report(listOf("the file is empty: expected the header збор<TAB>опис<TAB>слика"), emptyList()))
-    if (lines[headerIndex].split("\t").map { it.trim() } !in HEADERS) {
+    val header = lines[headerIndex].split("\t").map { it.trim() }
+    if (header !in HEADERS) {
         errors += "line ${headerIndex + 1}: header must be збор<TAB>опис<TAB>слика, got \"${lines[headerIndex].replace("\t", "<TAB>")}\""
     }
+    // A two-column header means the list has no pictures; otherwise allow the optional third column.
+    val maxColumns = if (header.size == 2) 2 else 3
 
     for (i in headerIndex + 1 until lines.size) {
         val raw = lines[i]
@@ -53,8 +61,9 @@ fun parseWordList(text: String, pictureNames: Set<String>? = null): WordList {
         val n = i + 1
         val rowErrors = mutableListOf<String>()
         val cols = raw.split("\t")
-        if (cols.size !in 2..3) {
-            errors += "line $n: expected 2 or 3 columns separated by tabs, got ${cols.size}"
+        if (cols.size !in 2..maxColumns) {
+            val expected = if (maxColumns == 2) "2 columns (the header has no слика)" else "2 or 3 columns"
+            errors += "line $n: expected $expected separated by tabs, got ${cols.size}"
             continue
         }
         val answer = cols[0].trim()
@@ -72,7 +81,7 @@ fun parseWordList(text: String, pictureNames: Set<String>? = null): WordList {
             rowErrors += clueProblems(clue, answer).map { "$where: $label „$clue“ $it" }
             warnings += clueWarnings(clue).map { "$where: $label „$clue“ $it" }
         }
-        clues.filter { it.isNotEmpty() }.groupingBy { it.lowercase() }.eachCount().filterValues { it > 1 }
+        clues.filter { it.isNotEmpty() }.groupingBy { it.lowercase().replace(SPACES, " ") }.eachCount().filterValues { it > 1 }
             .keys.forEach { rowErrors += "$where: the clue „$it“ is listed twice" }
 
         // The picture
@@ -82,7 +91,8 @@ fun parseWordList(text: String, pictureNames: Set<String>? = null): WordList {
             else if (pictureNames != null && picture !in pictureNames) rowErrors += "$where: picture file pictures/$picture not found"
         }
 
-        // Duplicates: compare the normalized answer, so ОКО and a look-alike spelling still collide.
+        // Duplicates: compare the NFC form, so a letter typed as letter + accent still matches the single letter.
+        // (Latin look-alikes don't collide here, but such rows already fail the letter check.)
         val key = Normalizer.normalize(answer, Normalizer.Form.NFC).uppercase()
         val earlier = firstLine[key]
         if (earlier != null) rowErrors += "$where: already on line $earlier — put extra clues on that line after '|'"
@@ -118,6 +128,8 @@ private fun answerProblems(answer: String): List<String> {
 
 private fun clueProblems(clue: String, answer: String): List<String> {
     val problems = mutableListOf<String>()
+    if (clue.none { it.isLetter() }) problems += "has no letters"
+    if (clue.any(::isInvisible)) problems += "has an invisible character (often pasted from the web); retype it"
     val latin = clue.filter(::isLatin)
     if (latin.isNotEmpty()) problems += "has Latin letters (${latin.toSet().joinToString("")}); use Cyrillic only"
     if (Normalizer.normalize(clue, Normalizer.Form.NFC) != clue) problems += "has a letter typed as a letter plus an accent mark"

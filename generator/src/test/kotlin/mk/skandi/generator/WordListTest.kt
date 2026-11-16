@@ -25,7 +25,7 @@ class WordListTest {
             ОКО	Орган за вид | Јамка во мрежа
             РЕКА	Тече низ град
 
-            ОБЛАК	Што гледаш на сликата?	oblak.svg
+            ОБЛАК	Носи дожд	oblak.svg
             """.trimIndent(),
         )
         assertEquals(emptyList<String>(), list.report.errors)
@@ -98,6 +98,26 @@ class WordListTest {
         assertError("ОКО\tОрган за вид |", "clue 2 is empty")
         assertError("ОКО\tОрган за вид | орган за вид", "listed twice")
         assertError("\tОрган за вид", "the word is empty")
+    }
+
+    @Test fun `clue without letters or with invisible characters is rejected`() {
+        assertError("ОКО\t...", "has no letters")
+        assertError("УВО\t-", "has no letters")
+        assertError("НОС\tОрган\u200Bза мирис", "invisible character") // zero-width space
+        assertError("НОС\tОрган за\u00ADмирис", "invisible character") // soft hyphen
+    }
+
+    @Test fun `repeated clue is found despite extra spaces`() {
+        assertError("ОКО\tОрган  за вид | Орган за вид", "listed twice")
+    }
+
+    @Test fun `two-column header allows no picture column`() {
+        val list = parseWordList("збор\tопис\nОКО\tОрган за вид\toblak.svg")
+        assertTrue(list.report.errors.any { "line 2: expected 2 columns (the header has no слика)" in it })
+    }
+
+    @Test fun `comments before the header are allowed`() {
+        assertTrue(parseWordList("# Мојата листа\n\nзбор\tопис\nОКО\tОрган за вид").report.ok)
     }
 
     @Test fun `clue must not contain the answer as a whole word`() {

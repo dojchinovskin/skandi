@@ -101,9 +101,11 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   columns, Macedonian capitals only with Latin look-alikes named, letter+accent typed as two characters,
   duplicates, empty/repeated clues, clue containing its answer, Latin letters or `"` in clues, picture name/file;
   warnings: clue over 30 characters or with a word over 8 letters; report of words per length). Runs in
-  `./gradlew build` (task `checkWords`) and CI. 22 new tests (53 Kotlin tests in total).
-  Starter list: 377 words, 398 clues, 358 of them 2–5 letters; includes 11 Macedonian place names in their own
-  section, easy to delete. Waiting for the owner's word-by-word review in the PR.
+  `./gradlew build` (task `checkWords`) and CI. 26 new tests (57 Kotlin tests in total).
+  Starter list: 378 words, 399 clues, 359 of them 2–5 letters; includes 12 Macedonian place names in their own
+  section, easy to delete. PR #5. Independent review found wrong clues (ГРАВ, СРНА, ВРАНА „грачи“, КАЈ as a
+  question word) and a format gap: fixed. Picture answers get their clue („Што покажува сликата?“) from the
+  generator, so `опис` holds only ordinary clues. Waiting for the owner's word-by-word review in the PR.
 
 ## Notes for later milestones
 - Generator (milestone 4): dense grids need many 2–5 letter words and bent arrows. A search that repairs a
@@ -111,7 +113,8 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   almost never satisfy the rules.
 - Clue length: on small phones (320px) clue cells are ~37px wide, and words longer than ~8 letters break
   mid-word (browsers can't hyphenate Macedonian). The generator (milestone 4) should prefer short clue words,
-  or we add soft hyphens to long words in the word list.
+  or we add soft hyphens to long words in the word list. `words-check` warns about such words; it rejects
+  invisible characters, so allow U+00AD there first if we choose soft hyphens.
 - The demo picture is light even in dark mode; fine for photos, revisit for drawn pictures.
 - Small phones (375×667 and smaller): the bottom keyboard row needs a little scrolling, same as the approved
   demo. Consider a compact layout in milestone 7.

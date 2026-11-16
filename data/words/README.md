@@ -8,14 +8,16 @@ Check it with `cd generator && ./gradlew run --args="words-check data/words/word
 
 ## Format
 
-A UTF-8 text file with one word per line and the columns separated by **tabs**. You can edit it in any
-text editor, or in Excel / LibreOffice / Google Sheets (open as TSV, save as TSV, UTF-8).
+A UTF-8 text file with one word per line and the columns separated by **tabs**. Edit it in a text editor
+(VS Code, IntelliJ), in LibreOffice Calc (save as "Text CSV", field separator Tab, character set UTF-8), or in
+Google Sheets (File → Download → Tab-separated values). Avoid saving from Excel: its "Text (Tab delimited)"
+loses the Cyrillic letters and its "Unicode Text" isn't UTF-8 (the check fails loudly on both).
 
 ```
 збор	опис	слика
 ОКО	Орган за вид | Јамка во мрежа
 РЕКА	Тече низ град | Вардар, на пример
-ОБЛАК	Што гледаш на сликата?	oblak.svg
+ОБЛАК	Носи дожд | Бел, на небото	oblak.svg
 ```
 
 | Column | Required | What |
@@ -24,7 +26,12 @@ text editor, or in Excel / LibreOffice / Google Sheets (open as TSV, save as TSV
 | `опис` | yes | One or more clues, separated by `\|`. Spaces around `\|` are ignored. |
 | `слика` | no | A picture in `data/site/pictures/` that shows this word; the word can then be a puzzle's picture answer. |
 
-- The first line is the header and must be exactly `збор	опис	слика` (or `збор	опис`).
+**Picture answers.** When the generator uses a word as a picture answer, its clue is always the same
+(„Што покажува сликата?“) and comes from the generator, not from this file. So `опис` holds only ordinary
+clues, which work in any puzzle, with or without the picture.
+
+- The first line that isn't blank or a comment is the header: `збор	опис	слика`, or `збор	опис` for a list
+  without pictures (then no line may have a third column).
 - Blank lines and lines starting with `#` are ignored, so you can group words under comments.
 - The order of the lines doesn't matter.
 
@@ -34,7 +41,8 @@ text editor, or in Excel / LibreOffice / Google Sheets (open as TSV, save as TSV
 2. `збор` uses only the 31 Macedonian capital letters. A Latin look-alike (`A`, `E`, `O`, `J`, `S`…) or a
    letter typed as two characters (`Г` + accent instead of `Ѓ`) is reported with the exact position.
 3. Each word appears on only one line. To give a word another clue, add it to the same line after `|`.
-4. Every clue has text, and the same clue isn't listed twice for one word.
+4. Every clue has at least one letter, and the same clue isn't listed twice for one word (ignoring case and
+   extra spaces). No invisible characters (zero-width spaces and the like, often pasted from the web).
 5. A clue doesn't contain its own answer as a whole word (`ОКО` can't have the clue „Око на бура“).
 6. Clues use Cyrillic only: no Latin letters (digits and punctuation are fine), and Macedonian quotes „ “
    instead of `"` (spreadsheets add extra `"` around such fields when saving).
