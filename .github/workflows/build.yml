@@ -23,7 +23,7 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
       - uses: gradle/actions/setup-gradle@v4
-      # build = compile + unit tests + validatePuzzles (all puzzles in data/site/puzzles)
+      # build = compile + unit tests + validatePuzzles (data/site/puzzles) + checkWords (data/words/words.tsv)
       - run: ./gradlew build
 
   web:

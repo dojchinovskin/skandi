@@ -43,3 +43,14 @@ val validatePuzzles by tasks.registering(JavaExec::class) {
     args("validate", "data/site/puzzles")
 }
 tasks.named("check") { dependsOn(validatePuzzles) }
+
+// `./gradlew check` also checks the word list (data/words/README.md).
+val checkWords by tasks.registering(JavaExec::class) {
+    group = "verification"
+    description = "Checks data/words/words.tsv against data/words/README.md."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set(application.mainClass)
+    workingDir = rootDir.parentFile
+    args("words-check", "data/words/words.tsv")
+}
+tasks.named("check") { dependsOn(checkWords) }

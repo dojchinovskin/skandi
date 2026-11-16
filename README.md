@@ -8,9 +8,10 @@ offline by a Kotlin tool and published as JSON; the website only plays them. See
 | Folder | What |
 |---|---|
 | `format/` | The puzzle JSON format (`README.md`) and its JSON Schema. The only contract between the two parts. |
-| `generator/` | Kotlin command-line tool (Gradle). Today: `validate`. Generating comes in milestone 4. |
+| `generator/` | Kotlin command-line tool (Gradle). Today: `validate` and `words-check`. Generating comes in milestone 4. |
 | `web/` | The website: TypeScript + React + Vite. |
 | `data/site/` | Published files, served as-is by the website: `puzzles/*.json`, `pictures/*`. |
+| `data/words/` | The word list the generator picks answers and clues from (`words.tsv`, format in its `README.md`). Not published. |
 | `demo/` | The approved static design demo (milestone 0). |
 
 ## Running it
@@ -18,10 +19,11 @@ offline by a Kotlin tool and published as JSON; the website only plays them. See
 Needs **JDK 17 or newer** (CI tests 17 and 25) and **Node.js 22.12 or newer**.
 
 ```sh
-# Generator: compile, run tests, validate every puzzle in data/site/puzzles
+# Generator: compile, run tests, validate every puzzle and the word list
 cd generator
 ./gradlew build                                  # Windows: gradlew.bat build
 ./gradlew run --args="validate data/site/puzzles/0001.json"
+./gradlew run --args="words-check data/words/words.tsv"   # errors, warnings, words per length
 
 # Website
 cd web
