@@ -161,14 +161,54 @@ class WordListTest {
     }
 }
 
+class PictureListTest {
+    private val header = "слика\tопис\tизвор\n"
+
+    @Test fun `good list loads`() {
+        val list = parsePictureList(header + "# коментар\noblak.svg\tОблак и сонце\tSkandi\n", setOf("oblak.svg"))
+        assertEquals(emptyList<String>(), list.report.errors)
+        assertEquals(PictureInfo("oblak.svg", "Облак и сонце", "Skandi", 3), list.pictures["oblak.svg"])
+    }
+
+    @Test fun `bad rows are rejected`() {
+        fun errors(body: String) = parsePictureList(header + body, setOf("oblak.svg")).report.errors
+        assertTrue(errors("oblak.svg\tОблак").any { "3 columns" in it })
+        assertTrue(errors("Oblak.svg\tОблак\tSkandi").any { "lowercase" in it })
+        assertTrue(errors("sonce.svg\tСонце\tSkandi").any { "not found" in it })
+        assertTrue(errors("oblak.svg\t \tSkandi").any { "опис is empty" in it })
+        assertTrue(errors("oblak.svg\tОблак\t ").any { "извор is empty" in it })
+        assertTrue(errors("oblak.svg\tОблак\tSkandi\noblak.svg\tОблак\tSkandi").any { "already on line 2" in it })
+        assertTrue(parsePictureList("слика\tопис\n").report.errors.any { "header" in it })
+    }
+
+    @Test fun `cross-check finds words with unlisted pictures and unused pictures`() {
+        val words = parseWordList("збор\tопис\tслика\nОБЛАК\tНа небо\toblak.svg\nРИБА\tВо вода\triba.svg\n")
+        val pictures = parsePictureList(header + "oblak.svg\tОблак\tSkandi\nmak.svg\tМак\tSkandi\n")
+        val r = crossCheckPictures(words, pictures)
+        assertEquals(1, r.errors.size)
+        assertTrue(r.errors.single().contains("riba.svg"))
+        assertTrue(r.warnings.single().contains("mak.svg"))
+    }
+}
+
 class WordsCheckCliTest {
-    private fun list(body: String, picture: String? = "oblak.svg"): File {
+    private fun list(body: String, picture: String? = "oblak.svg", pictures: String? = "oblak.svg\tОблак\tSkandi\n"): File {
         val data = Files.createTempDirectory("skandi").toFile()
         File(data, "words").mkdirs()
         File(data, "site/pictures").mkdirs()
         if (picture != null) File(data, "site/pictures/$picture").writeText("<svg/>")
+        if (pictures != null) File(data, "words/pictures.tsv").writeText("слика\tопис\tизвор\n$pictures")
         return File(data, "words/words.tsv").apply { writeText("збор\tопис\tслика\n$body") }
     }
+
+    @Test fun `picture words need pictures tsv`() =
+        assertFalse(wordsCheckCommand(listOf(list("ОБЛАК\tНа небо\toblak.svg", pictures = null).path)))
+
+    @Test fun `a word's picture must be listed in pictures tsv`() =
+        assertFalse(wordsCheckCommand(listOf(list("ОБЛАК\tНа небо\toblak.svg", pictures = "").path)))
+
+    @Test fun `bad pictures tsv fails`() =
+        assertFalse(wordsCheckCommand(listOf(list("ОБЛАК\tНа небо\toblak.svg", pictures = "oblak.svg\t\tSkandi\n").path)))
 
     @Test fun `good list passes`() = assertTrue(wordsCheckCommand(listOf(list("ОБЛАК\tНа небо\toblak.svg").path)))
 

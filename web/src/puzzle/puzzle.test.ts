@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import Ajv2020 from "ajv/dist/2020";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { formatDate, loadPuzzle } from "./load";
+import { formatDate, loadPuzzle, puzzleIdFrom } from "./load";
 import { SUPPORTED_FORMAT, type Puzzle } from "./types";
 
 const root = resolve(__dirname, "../../..");
@@ -67,6 +67,16 @@ describe("loadPuzzle", () => {
   it("reports a network failure in Macedonian", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
     await expect(loadPuzzle("0001")).rejects.toThrow("Нема врска");
+  });
+});
+
+describe("puzzleIdFrom", () => {
+  it("opens 0001 by default", () => expect(puzzleIdFrom("")).toBe("0001"));
+  it("reads ?p=", () => expect(puzzleIdFrom("?p=0002")).toBe("0002"));
+  it("ignores ids the format doesn't allow", () => {
+    expect(puzzleIdFrom("?p=../secret")).toBe("0001");
+    expect(puzzleIdFrom("?p=")).toBe("0001");
+    expect(puzzleIdFrom("?p=ABC")).toBe("0001");
   });
 });
 

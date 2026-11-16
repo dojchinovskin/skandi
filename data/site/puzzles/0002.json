@@ -1,0 +1,44 @@
+{
+  "format": 1,
+  "id": "0002",
+  "number": 2,
+  "date": "2026-11-17",
+  "width": 7,
+  "height": 9,
+  "grid": [
+    "#ПО#Н#С",
+    "###ЛИЦЕ",
+    "ТЕЛО#РЕ",
+    "#Х#НОВ#",
+    "ПОЛЕ#ЕЈ",
+    "###ЦЕНА",
+    "СОЛ#***",
+    "#ДЕЛ***",
+    "РИБА***"
+  ],
+  "clues": [
+    { "row": 0, "col": 0, "dir": "across", "text": "Предлог: ... ручекот" },
+    { "row": 0, "col": 3, "dir": "down", "start": "right", "text": "Кратко од „на нас“" },
+    { "row": 0, "col": 3, "dir": "down", "text": "Сад за готвење" },
+    { "row": 0, "col": 5, "dir": "down", "start": "right", "text": "Фрла семе во нива" },
+    { "row": 0, "col": 5, "dir": "down", "text": "Бојата на крвта" },
+    { "row": 1, "col": 0, "dir": "across", "start": "below", "text": "Глава, труп, раце, нозе" },
+    { "row": 1, "col": 1, "dir": "down", "text": "Глас што се враќа" },
+    { "row": 1, "col": 2, "dir": "across", "text": "Предниот дел од главата" },
+    { "row": 2, "col": 4, "dir": "across", "text": "Музичка нота, по до" },
+    { "row": 3, "col": 0, "dir": "across", "start": "below", "text": "Рамнина со ниви" },
+    { "row": 3, "col": 2, "dir": "across", "text": "Обратно од стар" },
+    { "row": 3, "col": 6, "dir": "down", "text": "„... видов неа“" },
+    { "row": 4, "col": 4, "dir": "across", "text": "Повик кон другар" },
+    { "row": 5, "col": 0, "dir": "across", "start": "below", "text": "Ја има морската вода" },
+    { "row": 5, "col": 1, "dir": "down", "text": "Чекори" },
+    { "row": 5, "col": 2, "dir": "across", "text": "Колку чини" },
+    { "row": 5, "col": 2, "dir": "down", "text": "Се пече во фурна" },
+    { "row": 6, "col": 3, "dir": "down", "text": "Музичка нота, по сол" },
+    { "row": 7, "col": 0, "dir": "across", "text": "Парче од целина" },
+    { "row": 7, "col": 0, "dir": "across", "start": "below", "text": "Што е на сликата?", "highlight": true }
+  ],
+  "pictures": [
+    { "row": 6, "col": 4, "width": 3, "height": 3, "file": "riba.svg", "alt": "Риба во вода", "credit": "Skandi" }
+  ]
+}

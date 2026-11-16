@@ -11,7 +11,7 @@ private val DATE = Regex("""\d{4}-\d{2}-\d{2}""")
 private val ID = Regex("[a-z0-9-]+")
 internal val PICTURE_FILE = Regex("""[a-z0-9-]+\.(svg|png|jpg|webp)""")
 
-private fun isRealDate(s: String) = DATE.matches(s) && runCatching { java.time.LocalDate.parse(s) }.isSuccess
+internal fun isRealDate(s: String) = DATE.matches(s) && runCatching { java.time.LocalDate.parse(s) }.isSuccess
 
 /** Checks the rules in format/README.md. Errors make a puzzle unusable; warnings are reported only. */
 fun validate(p: Puzzle): Report {

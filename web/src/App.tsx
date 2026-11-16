@@ -4,11 +4,12 @@ import { Header } from "./components/Header";
 import { Keyboard, usePhysicalKeyboard } from "./components/Keyboard";
 import { Actions, ClueBar, SolutionStrip, Toast } from "./components/Parts";
 import { type Action, initialState, reduce } from "./game/state";
-import { formatDate, loadPuzzle } from "./puzzle/load";
+import { formatDate, loadPuzzle, puzzleIdFrom } from "./puzzle/load";
 import { buildModel, type Model } from "./puzzle/model";
 import type { Puzzle } from "./puzzle/types";
 
-const PUZZLE_ID = "0001"; // the archive comes in milestone 6
+// `?p=0002` opens another puzzle; the archive (milestone 6) replaces this.
+const PUZZLE_ID = puzzleIdFrom(window.location.search);
 
 export default function App() {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);

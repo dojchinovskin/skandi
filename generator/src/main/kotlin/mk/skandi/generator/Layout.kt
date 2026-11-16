@@ -14,21 +14,34 @@ data class Slot(val start: Cell, val dir: Dir, val length: Int) {
 data class ClueSpot(val cell: Cell, val start: Start)
 
 /**
- * A grid of clue cells and letter cells, with no pictures and no filler: the shape of a puzzle before
- * the words go in. Immutable; [flip] returns a copy.
+ * A grid of clue cells, letter cells and picture cells, with no filler: the shape of a puzzle before the
+ * words go in. Picture cells are fixed; the search only flips cells between clue and letter.
+ * Immutable; [flip] returns a copy.
  */
-class Layout(val width: Int, val height: Int, private val clue: BooleanArray) {
+class Layout(
+    val width: Int,
+    val height: Int,
+    private val clue: BooleanArray,
+    private val picture: BooleanArray = BooleanArray(width * height),
+) {
     init {
-        require(clue.size == width * height)
+        require(clue.size == width * height && picture.size == width * height)
+        require(clue.indices.none { clue[it] && picture[it] }) { "a cell can't be both clue and picture" }
     }
 
     fun inside(c: Cell) = c.row in 0 until height && c.col in 0 until width
     fun isClue(c: Cell) = inside(c) && clue[c.row * width + c.col]
-    fun isLetter(c: Cell) = inside(c) && !clue[c.row * width + c.col]
+    fun isPicture(c: Cell) = inside(c) && picture[c.row * width + c.col]
+    fun isLetter(c: Cell) = inside(c) && !clue[c.row * width + c.col] && !picture[c.row * width + c.col]
     val cells: List<Cell> get() = List(width * height) { Cell(it / width, it % width) }
     val clueCells: List<Cell> get() = cells.filter { isClue(it) }
+    val letterCells: List<Cell> get() = cells.filter { isLetter(it) }
 
-    fun flip(c: Cell): Layout = Layout(width, height, clue.copyOf().also { it[c.row * width + c.col] = !it[c.row * width + c.col] })
+    /** Turns a clue cell into a letter or back. Picture cells can't be flipped. */
+    fun flip(c: Cell): Layout {
+        require(!isPicture(c)) { "picture cells are fixed" }
+        return Layout(width, height, clue.copyOf().also { it[c.row * width + c.col] = !it[c.row * width + c.col] }, picture)
+    }
 
     /** Every maximal run of 2+ letters, across and down; these are the answers. */
     val slots: List<Slot> by lazy {
@@ -61,15 +74,22 @@ class Layout(val width: Int, val height: Int, private val clue: BooleanArray) {
     /** The best clue assignment; see [ClueAssignment]. */
     val assignment: ClueAssignment by lazy { assignClues(this) }
 
-    /** The grid as text, '#' for clue cells and '-' for letters (for tests and debugging). */
+    /** The grid as text: '#' clue, '*' picture, '-' letter (for tests and debugging). */
     override fun toString() = (0 until height).joinToString("\n") { r ->
-        (0 until width).joinToString("") { c -> if (clue[r * width + c]) "#" else "-" }
+        (0 until width).joinToString("") { c ->
+            when {
+                clue[r * width + c] -> "#"
+                picture[r * width + c] -> "*"
+                else -> "-"
+            }
+        }
     }
 
     companion object {
         fun parse(text: String): Layout {
             val rows = text.trim().lines().map { it.trim() }
-            return Layout(rows[0].length, rows.size, rows.joinToString("").map { it == '#' }.toBooleanArray())
+            val all = rows.joinToString("")
+            return Layout(rows[0].length, rows.size, all.map { it == '#' }.toBooleanArray(), all.map { it == '*' }.toBooleanArray())
         }
     }
 }
@@ -185,6 +205,8 @@ data class LayoutGoal(
     val shortPenalty: Double = 0.75,
     /** If set, slots the word list certainly can't fill count as faults too. */
     val letters: LetterCheck? = null,
+    /** If set, the layout needs a slot this word can fill (the picture's answer). */
+    val needWord: String? = null,
 )
 
 /**
@@ -192,9 +214,20 @@ data class LayoutGoal(
  * every slot has a fillable length, a complete clue assignment). Clue-cell count is only a preference,
  * so it adds a fraction and never decides between usable and not.
  */
-fun faults(layout: Layout, goal: LayoutGoal): Int =
-    layout.orphans() + layout.slots.count { it.length !in goal.lengths } + layout.assignment.missing +
-        (goal.letters?.deadSlots(layout.slots) ?: 0)
+fun faults(layout: Layout, goal: LayoutGoal): Int {
+    val slots = layout.slots
+    val dead = goal.letters?.deadSlots(slots) ?: 0
+    var faults = layout.orphans() + slots.count { it.length !in goal.lengths } + layout.assignment.missing + dead
+    val need = goal.needWord
+    if (need != null) {
+        val targets = slots.indices.filter { slots[it].length == need.length }
+        // Only worth the extra checks once the rest passes; until then "not yet" is enough.
+        val fits = targets.isNotEmpty() && dead == 0 &&
+            (goal.letters == null || targets.any { goal.letters.deadSlots(slots, mapOf(it to need)) == 0 })
+        if (!fits) faults++
+    }
+    return faults
+}
 
 /** Faults plus preferences; lower is better. Faults weigh most, so they're fixed first. */
 private fun cost(layout: Layout, goal: LayoutGoal, faults: Int): Double {
@@ -208,19 +241,31 @@ private fun cost(layout: Layout, goal: LayoutGoal, faults: Int): Double {
  * keep changes that lower [cost] (and sometimes ones that raise it, less often as it cools).
  * Returns null if [steps] flips don't reach a usable layout; the caller then tries again.
  */
-fun searchLayout(width: Int, height: Int, goal: LayoutGoal, random: Random, steps: Int = 30_000): Layout? {
-    var current = Layout(width, height, BooleanArray(width * height) { random.nextDouble() < goal.clueShare })
-    // The top-left cell is always a clue: a letter there could have no clue next to it.
-    if (!current.isClue(Cell(0, 0))) current = current.flip(Cell(0, 0))
+fun searchLayout(
+    width: Int,
+    height: Int,
+    goal: LayoutGoal,
+    random: Random,
+    steps: Int = 30_000,
+    picture: Set<Cell> = emptySet(),
+    /** System.nanoTime() after which to stop early (returns null); Long.MAX_VALUE for no limit. */
+    deadline: Long = Long.MAX_VALUE,
+): Layout? {
+    val isPicture = BooleanArray(width * height) { Cell(it / width, it % width) in picture }
+    var current = Layout(width, height, BooleanArray(width * height) { !isPicture[it] && random.nextDouble() < goal.clueShare }, isPicture)
+    // The top-left cell is always a clue (unless it's picture): a letter there could have no clue next to it.
+    val corner = Cell(0, 0)
+    if (!current.isPicture(corner) && !current.isClue(corner)) current = current.flip(corner)
     var currentFaults = faults(current, goal)
     var currentCost = cost(current, goal, currentFaults)
     val startTemp = 2.0
     val endTemp = 0.05
     for (step in 0 until steps) {
         if (currentFaults == 0) return current
+        if (step % 512 == 0 && System.nanoTime() > deadline) return null
         val temp = startTemp * Math.pow(endTemp / startTemp, step.toDouble() / steps)
         val cell = Cell(random.nextInt(height), random.nextInt(width))
-        if (cell == Cell(0, 0)) continue
+        if (cell == corner || current.isPicture(cell)) continue
         val next = current.flip(cell)
         val nextFaults = faults(next, goal)
         val nextCost = cost(next, goal, nextFaults)

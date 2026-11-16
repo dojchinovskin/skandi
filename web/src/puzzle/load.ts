@@ -21,6 +21,16 @@ export async function loadPuzzle(id: string): Promise<Puzzle> {
   return data;
 }
 
+/**
+ * Which puzzle to open: `?p=0002` in the address, else 0001. A stopgap so generated puzzles can be tried
+ * on a phone; the archive (milestone 6) replaces it. Only ids the format allows, so the URL can't point
+ * the fetch anywhere else.
+ */
+export function puzzleIdFrom(search: string): string {
+  const p = new URLSearchParams(search).get("p");
+  return p !== null && /^[a-z0-9-]+$/.test(p) ? p : "0001";
+}
+
 const MONTHS = [
   "јануари", "февруари", "март", "април", "мај", "јуни",
   "јули", "август", "септември", "октомври", "ноември", "декември",

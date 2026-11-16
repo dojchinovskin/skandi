@@ -24,14 +24,14 @@ cd generator
 ./gradlew build                                  # Windows: gradlew.bat build
 ./gradlew run --args="validate data/site/puzzles/0001.json"
 ./gradlew run --args="words-check data/words/words.tsv"   # errors, warnings, words per length
-./gradlew run --args="generate --seed 11 --number 2"        # preview a new 7×9 puzzle
-./gradlew run --args="generate --seed 11 --number 2 --out data/site/puzzles/0002.json"
+./gradlew run --args="generate --seed 11 --number 3"        # preview a new 7×9 puzzle with a picture
+./gradlew run --args="generate --seed 11 --number 3 --out data/site/puzzles/0003.json"
 ./gradlew run --args="help"                                 # all options
 
 # Website
 cd web
 npm install
-npm run dev        # local dev server, opens at http://localhost:5173
+npm run dev        # local dev server, opens at http://localhost:5173 (add ?p=0002 for puzzle 0002)
 npm test           # checks puzzles against the schema
 npm run build      # production build in web/dist
 ```

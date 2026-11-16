@@ -119,13 +119,34 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   3. Fill: backtracking, most constrained slot first, bit sets per (length, position, letter), no word twice.
   4. Pick a random clue per word, run `validate` (must pass), write JSON in the 0001 style; never overwrites.
   Tuned on the starter list (7×9): clue cells ~30%, a penalty on 2-letter answers (46% → ~32%), average answer
-  3.2 letters, ~1.6 s a puzzle (6×8 0.7 s, 9×11 8 s). Same seed → same puzzle. 76 Kotlin tests.
+  3.2 letters, ~1.6 s a puzzle (6×8 0.7 s, 9×11 8 s). Same seed → same puzzle. 77 Kotlin tests.
+
+- 2026-11-17: PR #6 merged. The independent review of #6 (after merge) found three input bugs in `generate`:
+  an impossible `--date` crashed after generating, `--out` with a file name not matching the id wrote a file
+  `validate` rejects, a too-small word list crashed with a stack trace. Fixed on the milestone 5 branch, with
+  repeated options rejected and the time limit also checked inside the layout search.
+- 2026-11-17: Owner gave the green light for milestone 5. Built on branch `m5-picture`:
+  - `data/words/pictures.tsv` (file, description, credit), checked by `words-check` against the word list.
+  - Five new pictures drawn by Claude (сонце, риба, мак, клуч, чаша), simple SVGs like oblak.svg.
+  - Generator: by default every puzzle gets a picture block in a random corner (3×3 in 7×9; about half the
+    shorter side), a random picture word, pinned to one slot of its length; its clue is „Што е на сликата?“
+    (shorter than 0001's text, which needed three lines in a split clue cell) and it's highlighted. The letter
+    check tests that the picture word fits during the layout search: 7×9 ~1.5 s, usually the first layout.
+    Options `--picture FILE|none`, `--picture-size WxH`.
+  - Puzzle 0002 (seed 31, picture bottom-right) is published; open it with `?p=0002` (stopgap until the
+    archive in milestone 6). Played to the win in Chrome at 390px; screenshots at 320px and dark mode.
+  - 95 Kotlin tests, 68 web tests. Independent review: merge after fixes; fixed a test that compared 0002 with a
+    fresh run (would break CI on the first new word), a stack trace on a huge `--picture-size`, `--picture-size`
+    silently ignored with `--picture none`, `NONE` not accepted, README example that overwrote 0002.
 
 ## Notes for later milestones
 - Generator quality grows with the word list: more 3–5 letter words mean fewer 2-letter answers (prepositions,
   short pronouns) and faster generation. `words-check` prints the counts per length.
-- Picture block (milestone 5): reserve the picture's cells before the annealing (they stay fixed, like (0,0)),
-  and make the picture word a slot whose answer is the word with that `слика`.
+- Split clue cells fit about two short lines per clue. Long clues there overflow onto the arrow; the
+  generator could prefer short clues for cells holding two clues (milestone 7).
+- Picture position: only the four corners so far; magazines also put pictures along an edge.
+- Bigger grids are slow near the time limit (9×11 ~9 s here, 10×12 ~30 s); the limit is 60 s, so a slower
+  laptop may give up where this machine doesn't. Try another seed.
 - Variety across puzzles (milestone 6): avoid answers used in the last few puzzles.
 - Clue length: on small phones (320px) clue cells are ~37px wide, and words longer than ~8 letters break
   mid-word (browsers can't hyphenate Macedonian). The generator (milestone 4) should prefer short clue words,
@@ -146,7 +167,8 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 ## Next session
 1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
 2. Owner keeps reviewing `data/words/words.tsv` and adding words, especially 3–5 letters.
-3. Owner reviews the milestone 4 PR (try `generate` with a few seeds), then milestone 5 (picture block).
+3. Owner reviews the milestone 5 PR (play https://dojchinovskin.github.io/skandi/?p=0002 after merge), then
+   milestone 6 (puzzle archive: list of puzzles, pick one, deploy several).
    Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
    Maven/Gradle downloads are blocked there too: compile and test the Kotlin code with the Kotlin compiler
    bundled in /opt/gradle/lib (kotlin-compiler-embeddable, kotlinx-serialization-json, junit, annotations jars);

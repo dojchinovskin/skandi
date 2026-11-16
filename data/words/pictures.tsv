@@ -1,0 +1,8 @@
+слика	опис	извор
+# Every picture a word in words.tsv points to: file in data/site/pictures/, description (alt text), credit.
+oblak.svg	Облак и сонце	Skandi
+sonce.svg	Сонце со зраци	Skandi
+riba.svg	Риба во вода	Skandi
+mak.svg	Црвен мак	Skandi
+kluch.svg	Златен клуч	Skandi
+chasha.svg	Чаша вода	Skandi

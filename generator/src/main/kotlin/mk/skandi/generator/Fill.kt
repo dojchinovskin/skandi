@@ -27,9 +27,9 @@ class Filler(words: List<Word>) {
 
     /**
      * Returns a word for every slot, or null if there is none within [maxSteps] tries
-     * (the caller then tries another layout).
+     * (the caller then tries another layout). [fixed] slots must get exactly the given word.
      */
-    fun fill(slots: List<Slot>, random: Random, maxSteps: Int = 20_000): Map<Slot, Word>? {
+    fun fill(slots: List<Slot>, random: Random, maxSteps: Int = 20_000, fixed: Map<Slot, Word> = emptyMap()): Map<Slot, Word>? {
         if (slots.any { it.length !in byLength }) return null
         val n = slots.size
         // crossings[i] = (position in slot i, other slot, position in the other slot)
@@ -39,6 +39,14 @@ class Filler(words: List<Word>) {
         for (list in at.values) for ((a, pa) in list) for ((b, pb) in list) if (a != b) crossings[a] += Triple(pa, b, pb)
 
         val domains = Array(n) { i -> BitSet().apply { set(0, byLength.getValue(slots[i].length).size) } }
+        // Fixed slots (the picture's answer) start with just their word, so they're filled first.
+        for ((slot, word) in fixed) {
+            val i = slots.indexOf(slot)
+            val w = byLength[slot.length]?.indexOfFirst { it.answer == word.answer } ?: -1
+            if (i < 0 || w < 0) return null
+            domains[i].clear()
+            domains[i].set(w)
+        }
         val chosen = IntArray(n) { -1 }
         var steps = 0
 
