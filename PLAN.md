@@ -37,7 +37,7 @@ and plays them.
 
 ## Repo layout
 - `format/` — puzzle JSON format v1: `README.md` (fields + grid rules) and `puzzle.schema.json`.
-- `generator/` — Kotlin CLI (Gradle 9.1 wrapper, Kotlin 2.2, JDK 17+; CI tests JDK 17 and 25). Commands `validate` and `words-check`; generating comes in milestone 4.
+- `generator/` — Kotlin CLI (Gradle 9.1 wrapper, Kotlin 2.2, JDK 17+; CI tests JDK 17 and 25). Commands `generate`, `validate` and `words-check`.
   Uses only the kotlinx-serialization JSON *tree* API (no compiler plugin) and JUnit 4 for tests.
 - `web/` — TypeScript + React + Vite site (Node 22.12+). Vitest checks puzzles against the schema.
 - `data/site/` — published files served at the site root: `puzzles/NNNN.json`, `pictures/*`.
@@ -107,10 +107,26 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   question word) and a format gap: fixed. Picture answers get their clue („Што покажува сликата?“) from the
   generator, so `опис` holds only ordinary clues. Waiting for the owner's word-by-word review in the PR.
 
+- 2026-11-17: PR #5 merged (owner kept the short words, verbs and place names). Owner gave the green light for
+  milestone 4. Built on branch `m4-generator`: `generate` command (`Layout.kt`, `LetterCheck.kt`, `Fill.kt`,
+  `Generate.kt`). How it works:
+  1. Layout: simulated annealing flips cells between clue and letter until there are no orphan letters,
+     every word has a length the list can fill, and a clue assignment exists. The assignment (which clue cell
+     and arrow each word uses) is an exact max-flow with lower bounds: every word gets one clue spot, every
+     clue cell gets 1–2 clues, never two the same way.
+  2. Letter check (inside the annealing): arc consistency over the word list. Without it 55 of 60 layouts
+     were unfillable because of simple letter clashes; with it 1 in 2–3 layouts fills.
+  3. Fill: backtracking, most constrained slot first, bit sets per (length, position, letter), no word twice.
+  4. Pick a random clue per word, run `validate` (must pass), write JSON in the 0001 style; never overwrites.
+  Tuned on the starter list (7×9): clue cells ~30%, a penalty on 2-letter answers (46% → ~32%), average answer
+  3.2 letters, ~1.6 s a puzzle (6×8 0.7 s, 9×11 8 s). Same seed → same puzzle. 76 Kotlin tests.
+
 ## Notes for later milestones
-- Generator (milestone 4): dense grids need many 2–5 letter words and bent arrows. A search that repairs a
-  random layout cell by cell (simulated annealing) and then fills it worked well; random layouts alone
-  almost never satisfy the rules.
+- Generator quality grows with the word list: more 3–5 letter words mean fewer 2-letter answers (prepositions,
+  short pronouns) and faster generation. `words-check` prints the counts per length.
+- Picture block (milestone 5): reserve the picture's cells before the annealing (they stay fixed, like (0,0)),
+  and make the picture word a slot whose answer is the word with that `слика`.
+- Variety across puzzles (milestone 6): avoid answers used in the last few puzzles.
 - Clue length: on small phones (320px) clue cells are ~37px wide, and words longer than ~8 letters break
   mid-word (browsers can't hyphenate Macedonian). The generator (milestone 4) should prefer short clue words,
   or we add soft hyphens to long words in the word list. `words-check` warns about such words; it rejects
@@ -129,10 +145,8 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 
 ## Next session
 1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Owner reviews the milestone 3 PR, especially `data/words/words.tsv` word by word (wrong words, bad clues,
-   whether to keep the place names), then merges.
-3. Then milestone 4 (generator) once the owner gives the green light. The search scripts from the dense-grid
-   session are not in the repo; the approach is described under "Notes for later milestones".
+2. Owner keeps reviewing `data/words/words.tsv` and adding words, especially 3–5 letters.
+3. Owner reviews the milestone 4 PR (try `generate` with a few seeds), then milestone 5 (picture block).
    Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
    Maven/Gradle downloads are blocked there too: compile and test the Kotlin code with the Kotlin compiler
    bundled in /opt/gradle/lib (kotlin-compiler-embeddable, kotlinx-serialization-json, junit, annotations jars);
