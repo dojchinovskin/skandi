@@ -157,11 +157,12 @@ fun generateCommand(args: List<String>): Boolean {
     if (number < 1) return fail("--number: must be 1 or more")
     // Check the date before the slow part, with the same rule as the validator.
     if (!isRealDate(date)) return fail("--date: expected a real date as YYYY-MM-DD, got \"$date\"")
-    val picture = o["picture"]
+    val picture = o["picture"]?.let { if (it.equals("none", ignoreCase = true)) "none" else it }
     val pictureSize = o["picture-size"]?.let { v ->
-        val m = Regex("""(\d+)x(\d+)""").matchEntire(v) ?: return fail("--picture-size: expected WIDTHxHEIGHT like 3x3, got \"$v\"")
+        val m = Regex("""(\d{1,3})x(\d{1,3})""").matchEntire(v) ?: return fail("--picture-size: expected WIDTHxHEIGHT like 3x3, got \"$v\"")
         m.groupValues[1].toInt() to m.groupValues[2].toInt()
     }
+    if (picture == "none" && pictureSize != null) return fail("--picture-size: there is no picture with --picture none")
     val id = "%04d".format(number)
 
     val out = o["out"]?.let(::File)

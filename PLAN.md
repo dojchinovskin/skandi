@@ -135,7 +135,9 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
     Options `--picture FILE|none`, `--picture-size WxH`.
   - Puzzle 0002 (seed 31, picture bottom-right) is published; open it with `?p=0002` (stopgap until the
     archive in milestone 6). Played to the win in Chrome at 390px; screenshots at 320px and dark mode.
-  - 95 Kotlin tests, 68 web tests.
+  - 95 Kotlin tests, 68 web tests. Independent review: merge after fixes; fixed a test that compared 0002 with a
+    fresh run (would break CI on the first new word), a stack trace on a huge `--picture-size`, `--picture-size`
+    silently ignored with `--picture none`, `NONE` not accepted, README example that overwrote 0002.
 
 ## Notes for later milestones
 - Generator quality grows with the word list: more 3–5 letter words mean fewer 2-letter answers (prepositions,

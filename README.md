@@ -24,8 +24,8 @@ cd generator
 ./gradlew build                                  # Windows: gradlew.bat build
 ./gradlew run --args="validate data/site/puzzles/0001.json"
 ./gradlew run --args="words-check data/words/words.tsv"   # errors, warnings, words per length
-./gradlew run --args="generate --seed 11 --number 2"        # preview a new 7×9 puzzle with a picture
-./gradlew run --args="generate --seed 11 --number 2 --out data/site/puzzles/0002.json"
+./gradlew run --args="generate --seed 11 --number 3"        # preview a new 7×9 puzzle with a picture
+./gradlew run --args="generate --seed 11 --number 3 --out data/site/puzzles/0003.json"
 ./gradlew run --args="help"                                 # all options
 
 # Website
