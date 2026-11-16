@@ -9,7 +9,7 @@ const val MIN_SIZE = 3
 const val MAX_SIZE = 30
 private val DATE = Regex("""\d{4}-\d{2}-\d{2}""")
 private val ID = Regex("[a-z0-9-]+")
-private val PICTURE_FILE = Regex("""[a-z0-9-]+\.(svg|png|jpg|webp)""")
+internal val PICTURE_FILE = Regex("""[a-z0-9-]+\.(svg|png|jpg|webp)""")
 
 private fun isRealDate(s: String) = DATE.matches(s) && runCatching { java.time.LocalDate.parse(s) }.isSuccess
 

@@ -21,7 +21,8 @@ and plays them.
 | Hosting | GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to `main` (brought forward from milestone 6 so the owner can test on any device). Needs the repo public (free plan) and Settings → Pages → Source: GitHub Actions. |
 | Design | Clean and white, like Wordle / Зборле: square tiles, thin grey borders, bold letters, little colour. |
 | Input | On-screen Cyrillic keyboard (31 letters) on mobile, physical keyboard on desktop. |
-| Word list | TSV file in the repo (word, clue, optional picture). Claude drafts a starter list; owner reviews and extends it. |
+| Word list | TSV file in the repo: `data/words/words.tsv` (word, clues, optional picture), format in `data/words/README.md`. Claude drafts a starter list; owner reviews and extends it. |
+| Clues per word | Several, separated by `\|`, so a common word like ОКО doesn't get the same clue in every puzzle (owner, 2026-11-16). A word appears on only one line. |
 | Picture in grid | Yes. A block of cells holds an image that clues one or more answers. Only own or freely licensed images. |
 | Picture answer | A normal entry (one whole row or column word) with its own clue cell, e.g. „Што гледаш на сликата?“. Its cells are shaded yellow, like the shaded entries in Macedonian magazines (see „100 Сканди“). Also shown in the **Решение** strip. |
 | Pictures per puzzle | One for now; the format should allow more later. |
@@ -36,11 +37,11 @@ and plays them.
 
 ## Repo layout
 - `format/` — puzzle JSON format v1: `README.md` (fields + grid rules) and `puzzle.schema.json`.
-- `generator/` — Kotlin CLI (Gradle 9.1 wrapper, Kotlin 2.2, JDK 17+; CI tests JDK 17 and 25). Command `validate`; generating comes in milestone 4.
+- `generator/` — Kotlin CLI (Gradle 9.1 wrapper, Kotlin 2.2, JDK 17+; CI tests JDK 17 and 25). Commands `validate` and `words-check`; generating comes in milestone 4.
   Uses only the kotlinx-serialization JSON *tree* API (no compiler plugin) and JUnit 4 for tests.
 - `web/` — TypeScript + React + Vite site (Node 22.12+). Vitest checks puzzles against the schema.
 - `data/site/` — published files served at the site root: `puzzles/NNNN.json`, `pictures/*`.
-  The word list will live in `data/words/` (milestone 3), outside the published folder.
+  The word list lives in `data/words/`, outside the published folder.
 - `.github/workflows/build.yml` — builds and tests both parts on every push to `main` and every PR.
 - `CLAUDE.md` — project rules for the coding agent. `README.md` — how to run things.
 
@@ -95,6 +96,15 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
   with a search script; Claude reviewed the words and clues by hand. PR #4 reviewed (self + independent)
   and merged; the dense grid is live on the site.
 
+- 2026-11-16: Owner gave the green light for milestone 3 and chose several clues per word. Built on branch
+  `m3-word-list`: format in `data/words/README.md`; Kotlin `parseWordList` + `words-check` command (errors:
+  columns, Macedonian capitals only with Latin look-alikes named, letter+accent typed as two characters,
+  duplicates, empty/repeated clues, clue containing its answer, Latin letters or `"` in clues, picture name/file;
+  warnings: clue over 30 characters or with a word over 8 letters; report of words per length). Runs in
+  `./gradlew build` (task `checkWords`) and CI. 22 new tests (53 Kotlin tests in total).
+  Starter list: 377 words, 398 clues, 358 of them 2–5 letters; includes 11 Macedonian place names in their own
+  section, easy to delete. Waiting for the owner's word-by-word review in the PR.
+
 ## Notes for later milestones
 - Generator (milestone 4): dense grids need many 2–5 letter words and bent arrows. A search that repairs a
   random layout cell by cell (simulated annealing) and then fills it worked well; random layouts alone
@@ -116,7 +126,11 @@ letters). If the starter list can't fill ~7×9 densely, use a smaller grid or ad
 
 ## Next session
 1. `git pull`, open the folder in Claude, and ask it to read `PLAN.md`.
-2. Start milestone 3 (word list: format, starter list, validation) once the owner gives the green light.
-   Owner liked the dense grid (2026-11-15). The search scripts from that session are not in the repo; the
-   approach is described under "Notes for later milestones".
+2. Owner reviews the milestone 3 PR, especially `data/words/words.tsv` word by word (wrong words, bad clues,
+   whether to keep the place names), then merges.
+3. Then milestone 4 (generator) once the owner gives the green light. The search scripts from the dense-grid
+   session are not in the repo; the approach is described under "Notes for later milestones".
    Note: in Claude's cloud workspace `gh` works only through the REST API (`gh api ...`), not `gh pr ...`.
+   Maven/Gradle downloads are blocked there too: compile and test the Kotlin code with the Kotlin compiler
+   bundled in /opt/gradle/lib (kotlin-compiler-embeddable, kotlinx-serialization-json, junit, annotations jars);
+   the real `./gradlew build` runs in GitHub Actions.
